@@ -98,3 +98,19 @@ export function toDateInputValue(value: string | Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
+
+/**
+ * Money as it is read on an invoice in Argentina: thousands separated by a
+ * dot, decimals by a comma, always two of them.
+ *
+ * Always two, even on a round number: a column of amounts that sometimes
+ * shows cents and sometimes does not is a column nobody can scan.
+ */
+export function formatMoney(value: number, currency = 'ARS'): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}

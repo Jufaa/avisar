@@ -8,13 +8,16 @@ const NAV = [
   { to: '/pacientes', label: 'Pacientes', icon: '👤' },
   { to: '/profesionales', label: 'Profesionales', icon: '🩺', clinicOnly: true },
   { to: '/recordatorios', label: 'Recordatorios', icon: '💬' },
+  { to: '/facturas', label: 'Facturas', icon: '🧾' },
 ];
 
 /**
  * Bottom tab bar on a phone, side rail on a desktop.
  *
- * Four destinations, never more: a practice manager should be able to reach
- * anything in the product without reading a menu.
+ * Kept to four destinations for a solo account — the common case — because a
+ * practice manager should reach anything without reading a menu. A clinic
+ * sees five, and that is already the ceiling: the next feature earns its
+ * place by replacing one of these, not by appending to them.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();

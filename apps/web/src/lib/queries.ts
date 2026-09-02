@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AccountMode,
   AppointmentDto,
+  BillingProfileDto,
+  InvoiceDto,
+  InvoicingStatusDto,
   MessageTemplateDto,
   NotificationLogDto,
   OrganizationDto,
@@ -248,5 +251,82 @@ export function useCompleteOnboarding() {
     mutationFn: () =>
       api<OrganizationDto>('/organization/onboarding/complete', { method: 'POST' }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['me'] }),
+  });
+}
+
+// --- invoicing -------------------------------------------------------------
+
+export function useInvoicingStatus() {
+  return useQuery({
+    queryKey: ['invoicing-status'],
+    queryFn: () => api<InvoicingStatusDto>('/invoicing/status'),
+    staleTime: 60_000,
+  });
+}
+
+export function useBillingProfile() {
+  return useQuery({
+    queryKey: ['billing-profile'],
+    queryFn: () => api<BillingProfileDto | null>('/billing-profile'),
+  });
+}
+
+export function useSaveBillingProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Record<string, unknown>) =>
+      api<BillingProfileDto>('/billing-profile', { method: 'PUT', body: input }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['billing-profile'] });
+      // The status endpoint reports whether the practice is set up at all.
+      void queryClient.invalidateQueries({ queryKey: ['invoicing-status'] });
+    },
+  });
+}
+
+interface InvoicePage {
+  items: InvoiceDto[];
+  total: number;
+}
+
+export function useInvoices() {
+  return useQuery({
+    queryKey: ['invoices'],
+    queryFn: () => api<InvoicePage>('/invoices'),
+  });
+}
+
+export function useDraftInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Record<string, unknown>) =>
+      api<InvoiceDto>('/invoices', { method: 'POST', body: input }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+  });
+}
+
+/**
+ * The only call in the client that creates a fiscal document.
+ *
+ * Kept as its own hook rather than folded into the draft mutation so that
+ * reading the code makes the boundary obvious: drafting is free, this is not.
+ */
+export function useIssueInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api<InvoiceDto>(`/invoices/${id}/issue`, { method: 'POST' }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+  });
+}
+
+export function useDeleteInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/invoices/${id}`, { method: 'DELETE' }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['invoices'] }),
   });
 }

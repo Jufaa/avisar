@@ -1,0 +1,158 @@
+import { useState } from 'react';
+import type { InvoiceDto } from '@avisar/shared';
+import {
+  useBillingProfile,
+  useDeleteInvoice,
+  useInvoices,
+  useInvoicingStatus,
+  useIssueInvoice,
+} from '../../lib/queries';
+import { Button } from '../../components/ui/Button';
+import { EmptyState, InfoNotice, InvoiceBadge, Loading } from '../../components/ui/Feedback';
+import { BillingProfileForm } from './BillingProfileForm';
+import { InvoiceSheet } from './InvoiceSheet';
+import { formatMoney } from '../../lib/format';
+
+export function InvoicesPage() {
+  const status = useInvoicingStatus();
+  const profile = useBillingProfile();
+  const invoices = useInvoices();
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  if (profile.isLoading || status.isLoading) return <Loading />;
+
+  // No tax details means no invoice can be built at all, so the form is the
+  // page rather than something hidden behind a settings screen.
+  if (!profile.data) {
+    return (
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-5">
+        <header>
+          <h1 className="text-3xl font-bold text-ink-900">Facturación</h1>
+          <p className="mt-0.5 text-base text-ink-500">
+            Cargá tus datos fiscales una vez y ya podés facturar.
+          </p>
+        </header>
+
+        <BillingProfileForm profile={null} />
+      </div>
+    );
+  }
+
+  const items = invoices.data?.items ?? [];
+
+  return (
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
+      <header className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-bold text-ink-900">Facturación</h1>
+          <p className="mt-0.5 text-base text-ink-500">
+            Punto de venta {String(profile.data.salesPoint).padStart(4, '0')} ·{' '}
+            {profile.data.legalName}
+          </p>
+        </div>
+
+        <Button size="lg" onClick={() => setSheetOpen(true)}>
+          + Nueva factura
+        </Button>
+      </header>
+
+      {/* Said on the page itself, not buried in settings. Believing a
+          simulated CAE was a real invoice is the worst outcome here. */}
+      {status.data && !status.data.live && (
+        <InfoNotice>
+          <strong className="font-semibold">Modo de prueba.</strong> Se simula el CAE y{' '}
+          <strong className="font-semibold">no se emite ninguna factura real</strong>. Sirve para
+          probar todo el circuito sin costo.
+        </InfoNotice>
+      )}
+
+      {invoices.isLoading ? (
+        <Loading />
+      ) : items.length === 0 ? (
+        <EmptyState
+          title="Todavía no facturaste nada"
+          description="Armá una factura, revisá los números y recién ahí se emite."
+          action={<Button onClick={() => setSheetOpen(true)}>Nueva factura</Button>}
+        />
+      ) : (
+        <div className="flex flex-col gap-2">
+          {items.map((invoice) => (
+            <InvoiceRow key={invoice.id} invoice={invoice} />
+          ))}
+        </div>
+      )}
+
+      <InvoiceSheet
+        open={sheetOpen}
+        profile={profile.data}
+        onClose={() => setSheetOpen(false)}
+      />
+    </div>
+  );
+}
+
+function InvoiceRow({ invoice }: { invoice: InvoiceDto }) {
+  const issue = useIssueInvoice();
+  const remove = useDeleteInvoice();
+
+  const claimable = invoice.status === 'DRAFT' || invoice.status === 'FAILED';
+
+  return (
+    <div className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold text-ink-900">
+              {invoice.displayNumber ?? `Factura ${invoice.type}`}
+            </span>
+            <InvoiceBadge status={invoice.status} />
+          </div>
+          <p className="mt-0.5 truncate text-base text-ink-700">{invoice.receiverName}</p>
+          <p className="text-sm text-ink-500">{invoice.issuedOn}</p>
+        </div>
+
+        <span className="shrink-0 text-lg font-bold tabular-nums text-ink-900">
+          {formatMoney(invoice.total, invoice.currency)}
+        </span>
+      </div>
+
+      {invoice.cae && (
+        <p className="text-sm text-ink-500">
+          CAE {invoice.cae} · vence {invoice.caeExpiresOn}
+        </p>
+      )}
+
+      {invoice.error && (
+        <p role="alert" className="text-sm font-medium text-danger-600">
+          {invoice.error}
+        </p>
+      )}
+
+      {claimable && (
+        <div className="flex flex-wrap gap-2">
+          <Button loading={issue.isPending} onClick={() => issue.mutate(invoice.id)}>
+            {invoice.status === 'FAILED' ? 'Reintentar' : 'Emitir'}
+          </Button>
+          <Button
+            variant="ghost"
+            loading={remove.isPending}
+            onClick={() => remove.mutate(invoice.id)}
+          >
+            Descartar
+          </Button>
+        </div>
+      )}
+
+      {invoice.pdfUrl && (
+        <a
+          href={invoice.pdfUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm font-semibold text-brand-700"
+        >
+          Ver PDF
+        </a>
+      )}
+    </div>
+  );
+}

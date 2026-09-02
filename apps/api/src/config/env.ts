@@ -45,6 +45,17 @@ const schema = z
       .default('false')
       .transform((value) => value === 'true'),
     META_API_VERSION: z.string().default('v21.0'),
+
+    /**
+     * fake = simulated CAE, no account and no cost. The default on purpose:
+     * the whole feature is built and demonstrated against it, and nobody pays
+     * a provider until a real customer is on the other side.
+     */
+    INVOICING_PROVIDER: z.enum(['fake', 'tusfacturas']).default('fake'),
+    TUSFACTURAS_API_KEY: z.string().optional(),
+    TUSFACTURAS_API_TOKEN: z.string().optional(),
+    TUSFACTURAS_USER_TOKEN: z.string().optional(),
+    TUSFACTURAS_BASE_URL: z.string().url().default('https://www.tusfacturas.app/app/api/v2'),
   })
   .superRefine((value, ctx) => {
     // Each live provider declares what it cannot start without. Failing here
@@ -55,15 +66,35 @@ const schema = z
     } as const;
 
     const keys = required[value.NOTIFICATION_PROVIDER as keyof typeof required];
-    if (!keys) return;
 
-    const missing = keys.filter((key) => !value[key as keyof typeof value]);
+    if (keys) {
+      const missing = keys.filter((key) => !value[key as keyof typeof value]);
 
-    if (missing.length > 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `NOTIFICATION_PROVIDER=${value.NOTIFICATION_PROVIDER} requires: ${missing.join(', ')}`,
-      });
+      if (missing.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `NOTIFICATION_PROVIDER=${value.NOTIFICATION_PROVIDER} requires: ${missing.join(', ')}`,
+        });
+      }
+    }
+
+    // Same contract for invoicing: the day someone switches this on, they find
+    // out at boot what is missing, not when a patient is waiting for a receipt.
+    if (value.INVOICING_PROVIDER === 'tusfacturas') {
+      const invoicingKeys = [
+        'TUSFACTURAS_API_KEY',
+        'TUSFACTURAS_API_TOKEN',
+        'TUSFACTURAS_USER_TOKEN',
+      ] as const;
+
+      const missing = invoicingKeys.filter((key) => !value[key]);
+
+      if (missing.length > 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `INVOICING_PROVIDER=tusfacturas requires: ${missing.join(', ')}`,
+        });
+      }
     }
   });
 

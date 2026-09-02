@@ -9,6 +9,7 @@ import { professionalRoutes } from './modules/professionals/http/professional.ro
 import { patientRoutes } from './modules/patients/http/patient.routes.js';
 import { appointmentRoutes } from './modules/appointments/http/appointment.routes.js';
 import { notificationRoutes } from './modules/notifications/http/notification.routes.js';
+import { invoiceRoutes } from './modules/invoicing/http/invoice.routes.js';
 import { publicRoutes } from './modules/public/http/public.routes.js';
 
 export async function buildApp(): Promise<FastifyInstance> {
@@ -41,6 +42,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(patientRoutes, { prefix: '/api' });
   await app.register(appointmentRoutes, { prefix: '/api' });
   await app.register(notificationRoutes, { prefix: '/api' });
+  await app.register(invoiceRoutes, { prefix: '/api' });
   await app.register(publicRoutes, { prefix: '/api' });
 
   return app;

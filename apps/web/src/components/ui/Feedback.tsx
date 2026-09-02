@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { AppointmentStatus, NotificationStatus } from '@avisar/shared';
+import type { AppointmentStatus, InvoiceStatus, NotificationStatus } from '@avisar/shared';
 
 // --- status pills ----------------------------------------------------------
 
@@ -82,5 +82,22 @@ export function InfoNotice({ children }: { children: ReactNode }) {
     <div className="rounded-xl border border-info-600/20 bg-info-50 px-4 py-3 text-sm text-info-600">
       {children}
     </div>
+  );
+}
+
+const INVOICE_LABELS: Record<InvoiceStatus, { label: string; className: string }> = {
+  DRAFT: { label: 'Borrador', className: 'bg-line-soft text-ink-700' },
+  ISSUING: { label: 'Emitiendo', className: 'bg-info-50 text-info-600' },
+  ISSUED: { label: 'Emitida', className: 'bg-brand-100 text-brand-700' },
+  FAILED: { label: 'Rechazada', className: 'bg-danger-50 text-danger-600' },
+  VOID: { label: 'Anulada', className: 'bg-line-soft text-ink-500' },
+};
+
+export function InvoiceBadge({ status }: { status: InvoiceStatus }) {
+  const { label, className } = INVOICE_LABELS[status];
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}>
+      {label}
+    </span>
   );
 }

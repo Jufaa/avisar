@@ -143,3 +143,88 @@ export interface ApiErrorBody {
     details?: unknown;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Invoicing
+// ---------------------------------------------------------------------------
+
+export const TAX_CONDITION = ['MONOTRIBUTO', 'RESPONSABLE_INSCRIPTO', 'EXENTO'] as const;
+export type TaxCondition = (typeof TAX_CONDITION)[number];
+
+export const RECEIVER_TAX_CONDITION = [
+  'RESPONSABLE_INSCRIPTO',
+  'MONOTRIBUTO',
+  'CONSUMIDOR_FINAL',
+  'EXENTO',
+] as const;
+export type ReceiverTaxCondition = (typeof RECEIVER_TAX_CONDITION)[number];
+
+export const INVOICE_TYPE = ['A', 'B', 'C'] as const;
+export type InvoiceType = (typeof INVOICE_TYPE)[number];
+
+export const INVOICE_STATUS = ['DRAFT', 'ISSUING', 'ISSUED', 'FAILED', 'VOID'] as const;
+export type InvoiceStatus = (typeof INVOICE_STATUS)[number];
+
+export const DOCUMENT_KIND = ['CUIT', 'CUIL', 'DNI', 'SIN_IDENTIFICAR'] as const;
+export type DocumentKind = (typeof DOCUMENT_KIND)[number];
+
+/** The VAT rates ARCA accepts. Stored per line: one invoice may mix them. */
+export const VAT_RATES = [0, 10.5, 21, 27] as const;
+export type VatRate = (typeof VAT_RATES)[number];
+
+export interface BillingProfileDto {
+  taxId: string;
+  legalName: string;
+  taxCondition: TaxCondition;
+  salesPoint: number;
+  grossIncomeId: string | null;
+  activityStartedOn: string | null;
+}
+
+export interface InvoiceItemDto {
+  id: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  vatRate: number;
+  subtotal: number;
+  vatAmount: number;
+  total: number;
+}
+
+export interface InvoiceDto {
+  id: string;
+  type: InvoiceType;
+  status: InvoiceStatus;
+  salesPoint: number;
+  number: number | null;
+  /** Formatted the way a person reads it on paper: 0003-00000127. */
+  displayNumber: string | null;
+  issuedOn: string;
+  receiverName: string;
+  receiverDocKind: DocumentKind;
+  receiverDocNumber: string;
+  receiverTaxCondition: ReceiverTaxCondition;
+  receiverAddress: string | null;
+  subtotal: number;
+  vatAmount: number;
+  total: number;
+  currency: string;
+  cae: string | null;
+  caeExpiresOn: string | null;
+  pdfUrl: string | null;
+  error: string | null;
+  patientId: string | null;
+  appointmentId: string | null;
+  items: InvoiceItemDto[];
+  createdAt: string;
+  issuedAt: string | null;
+}
+
+/** Whether documents actually reach ARCA, surfaced so nobody has to guess. */
+export interface InvoicingStatusDto {
+  provider: string;
+  live: boolean;
+  configured: boolean;
+  description: string;
+}

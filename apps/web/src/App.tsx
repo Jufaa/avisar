@@ -9,6 +9,7 @@ import { AgendaPage } from './features/agenda/AgendaPage';
 import { PatientsPage } from './features/patients/PatientsPage';
 import { ProfessionalsPage } from './features/professionals/ProfessionalsPage';
 import { RemindersPage } from './features/settings/RemindersPage';
+import { InvoicesPage } from './features/invoices/InvoicesPage';
 import { ConfirmPage } from './features/public/ConfirmPage';
 import { useIsSolo } from './lib/useAccountMode';
 
@@ -27,6 +28,7 @@ export function App() {
       <Route path="/pacientes" element={<Private><PatientsPage /></Private>} />
       <Route path="/profesionales" element={<Private><ClinicOnly><ProfessionalsPage /></ClinicOnly></Private>} />
       <Route path="/recordatorios" element={<Private><RemindersPage /></Private>} />
+      <Route path="/facturas" element={<Private><InvoicesPage /></Private>} />
 
       <Route path="*" element={<Navigate to="/agenda" replace />} />
     </Routes>

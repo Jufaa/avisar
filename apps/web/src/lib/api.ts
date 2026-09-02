@@ -34,7 +34,7 @@ export function setToken(token: string | null): void {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   /** Public endpoints (the patient's confirm link) must not send a token. */
   anonymous?: boolean;

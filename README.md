@@ -254,6 +254,50 @@ token viaja aparte, como parámetro del botón.
 
 ---
 
+## Facturación electrónica (ARCA)
+
+La sección **Facturas** emite comprobantes electrónicos contra ARCA a través de
+un proveedor intermediario. Arranca en modo simulado, sin cuenta y sin costo.
+
+### Cómo funciona
+
+1. Cargás los datos fiscales del consultorio una vez: CUIT, razón social,
+   condición frente al IVA y punto de venta.
+2. Armás la factura. El tipo (A, B o C) **no se elige**: se deriva de tu
+   condición y la del cliente. Un monotributista siempre emite C.
+3. Revisás los números en pantalla.
+4. Confirmás. Recién ahí se emite y se obtiene el CAE.
+
+Ese paso 3 no es un adorno: una factura es un documento fiscal, y nada que
+tenga validez legal debería salir de un solo clic.
+
+### Modo simulado vs. real
+
+| Variable | Valor | Qué pasa |
+|---|---|---|
+| `INVOICING_PROVIDER` | `fake` (por defecto) | Se simula el CAE. **No se emite nada real.** Sirve para construir y probar todo el circuito. |
+| `INVOICING_PROVIDER` | `tusfacturas` | Se emite de verdad en ARCA. Requiere cuenta y credenciales. |
+
+Para pasar a real, en `apps/api/.env`:
+
+```
+INVOICING_PROVIDER=tusfacturas
+TUSFACTURAS_API_KEY=
+TUSFACTURAS_API_TOKEN=
+TUSFACTURAS_USER_TOKEN=
+```
+
+La app avisa en pantalla, en cada carga de la sección, cuando está en modo
+simulado. Nadie debería creer que emitió una factura real cuando emitió una
+simulación.
+
+### Una factura emitida no se edita ni se borra
+
+Existe en ARCA. Nuestra base es una copia, y borrar la copia no la deshace.
+Un error se corrige con una nota de crédito.
+
+---
+
 ## Estructura
 
 ```
