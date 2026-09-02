@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { InvoiceDto } from '@avisar/shared';
 import {
   useBillingProfile,
@@ -143,16 +144,27 @@ function InvoiceRow({ invoice }: { invoice: InvoiceDto }) {
         </div>
       )}
 
-      {invoice.pdfUrl && (
-        <a
-          href={invoice.pdfUrl}
-          target="_blank"
-          rel="noreferrer"
+      {/* Our own rendering, always available. The provider's link expires the
+          same day, so it is offered as an extra rather than as the copy. */}
+      <div className="flex flex-wrap gap-4">
+        <Link
+          to={`/facturas/${invoice.id}`}
           className="text-sm font-semibold text-brand-700"
         >
-          Ver PDF
-        </a>
-      )}
+          Ver e imprimir
+        </Link>
+
+        {invoice.pdfUrl && (
+          <a
+            href={invoice.pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-sm font-semibold text-brand-700"
+          >
+            PDF del proveedor
+          </a>
+        )}
+      </div>
     </div>
   );
 }

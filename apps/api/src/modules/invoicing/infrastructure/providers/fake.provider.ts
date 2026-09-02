@@ -52,8 +52,9 @@ export class FakeInvoiceProvider implements InvoiceProvider {
         cae,
         caeExpiresOn: expires.toISOString().slice(0, 10),
         number,
-        // It hosts nothing, so it claims nothing. The app renders its own
-        // preview from the stored row.
+        // It hosts nothing, so it claims nothing. The app prints the
+        // document itself from the stored row, which is what makes a
+        // simulated invoice look exactly like a real one on paper.
         pdfUrl: null,
         providerRef: `fake-${invoice.reference}`,
       },

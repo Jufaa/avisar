@@ -330,3 +330,11 @@ export function useDeleteInvoice() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['invoices'] }),
   });
 }
+
+export function useInvoice(id: string) {
+  return useQuery({
+    queryKey: ['invoice', id],
+    queryFn: () => api<InvoiceDto>(`/invoices/${id}`),
+    enabled: id.length > 0,
+  });
+}

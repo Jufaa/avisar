@@ -10,6 +10,7 @@ import { PatientsPage } from './features/patients/PatientsPage';
 import { ProfessionalsPage } from './features/professionals/ProfessionalsPage';
 import { RemindersPage } from './features/settings/RemindersPage';
 import { InvoicesPage } from './features/invoices/InvoicesPage';
+import { InvoicePrintPage } from './features/invoices/InvoicePrintPage';
 import { ConfirmPage } from './features/public/ConfirmPage';
 import { useIsSolo } from './lib/useAccountMode';
 
@@ -29,6 +30,8 @@ export function App() {
       <Route path="/profesionales" element={<Private><ClinicOnly><ProfessionalsPage /></ClinicOnly></Private>} />
       <Route path="/recordatorios" element={<Private><RemindersPage /></Private>} />
       <Route path="/facturas" element={<Private><InvoicesPage /></Private>} />
+      {/* `bare`: the paper has no navigation rail on it. */}
+      <Route path="/facturas/:id" element={<Private bare><InvoicePrintPage /></Private>} />
 
       <Route path="*" element={<Navigate to="/agenda" replace />} />
     </Routes>
