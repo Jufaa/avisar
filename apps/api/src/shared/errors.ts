@@ -43,3 +43,17 @@ export class ConflictError extends AppError {
     super(409, 'CONFLICT', message, details);
   }
 }
+
+/**
+ * Raised by the rate limiter.
+ *
+ * It is an AppError rather than a plain object on purpose: the error handler
+ * recognises those and answers 429. A bare object with no status code falls
+ * through to the catch-all and becomes a 500, which tells the caller the
+ * server broke when in fact it defended itself.
+ */
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Demasiadas solicitudes. Esperá un momento y probá de nuevo.') {
+    super(429, 'RATE_LIMITED', message);
+  }
+}

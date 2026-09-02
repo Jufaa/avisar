@@ -16,7 +16,21 @@ const actionBody = z.object({
  * guess and nothing to enumerate.
  */
 export async function publicRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Params: { token: string } }>('/public/appointments/:token', async (request) => {
+  /**
+   * These two routes have no session behind them, so the budget is the only
+   * thing standing between a stranger and an unlimited number of guesses.
+   *
+   * The token is 24 random bytes, which is far too much to guess — but a
+   * cheap unauthenticated endpoint is also a free way to load the database,
+   * and that is worth capping on its own.
+   */
+  const publicLimit = {
+    config: {
+      rateLimit: { max: 30, timeWindow: '1 minute' },
+    },
+  };
+
+  app.get<{ Params: { token: string } }>('/public/appointments/:token', publicLimit, async (request) => {
     const record = await prisma.appointmentActionToken.findUnique({
       where: { token: request.params.token },
       include: {
@@ -44,7 +58,7 @@ export async function publicRoutes(app: FastifyInstance): Promise<void> {
     return response;
   });
 
-  app.post<{ Params: { token: string } }>('/public/appointments/:token', async (request) => {
+  app.post<{ Params: { token: string } }>('/public/appointments/:token', publicLimit, async (request) => {
     const body = actionBody.parse(request.body);
 
     const record = await prisma.appointmentActionToken.findUnique({

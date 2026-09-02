@@ -29,13 +29,27 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     issue: (claims) => app.jwt.sign(claims, { expiresIn: env.JWT_EXPIRES_IN }),
   };
 
-  app.post('/auth/register', async (request, reply) => {
+  /**
+   * The tightest budget in the API.
+   *
+   * A password is the one secret a stranger can guess, and bcrypt only makes
+   * each guess expensive — it does not stop someone making millions of them.
+   * Ten attempts per address per fifteen minutes leaves a forgetful user
+   * plenty of room and leaves an attacker none.
+   */
+  const strictLimit = {
+    config: {
+      rateLimit: { max: 10, timeWindow: '15 minutes' },
+    },
+  };
+
+  app.post('/auth/register', strictLimit, async (request, reply) => {
     const body = registerBody.parse(request.body);
     const result = await registerAccount(body, { repository, hasher, tokens });
     return reply.status(201).send(result);
   });
 
-  app.post('/auth/login', async (request, reply) => {
+  app.post('/auth/login', strictLimit, async (request, reply) => {
     const body = loginBody.parse(request.body);
     const result = await login(body, { repository, hasher, tokens });
     return reply.send(result);
