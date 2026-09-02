@@ -68,6 +68,7 @@ function toProfileDto(profile: BillingProfile): BillingProfileDto {
     legalName: profile.legalName,
     taxCondition: profile.taxCondition,
     salesPoint: profile.salesPoint,
+    address: profile.address,
     grossIncomeId: profile.grossIncomeId,
     activityStartedOn: profile.activityStartedOn
       ? profile.activityStartedOn.toISOString().slice(0, 10)

@@ -9,8 +9,8 @@ import type { BillingProfileDto, DocumentKind, InvoiceDto } from '@avisar/shared
  * stored row rather than from anything the provider hands back.
  */
 
-/** ARCA's own comprobante codes. */
-const COMPROBANTE_CODE: Record<InvoiceDto['type'], number> = {
+/** ARCA's own comprobante codes. Printed on the paper and sent in the QR. */
+export const COMPROBANTE_CODE: Record<InvoiceDto['type'], number> = {
   A: 1,
   B: 6,
   C: 11,

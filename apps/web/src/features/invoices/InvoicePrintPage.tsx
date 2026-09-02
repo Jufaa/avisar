@@ -5,7 +5,7 @@ import { useBillingProfile, useInvoice } from '../../lib/queries';
 import { Button } from '../../components/ui/Button';
 import { EmptyState, Loading } from '../../components/ui/Feedback';
 import { formatMoney } from '../../lib/format';
-import { buildArcaQrUrl } from './arca-qr';
+import { buildArcaQrUrl, COMPROBANTE_CODE } from './arca-qr';
 
 const TYPE_NAMES: Record<'A' | 'B' | 'C', string> = {
   A: 'FACTURA A',
@@ -98,22 +98,26 @@ export function InvoicePrintPage() {
         <header className="relative grid grid-cols-2 border-b border-ink-900">
           <div className="p-5">
             <p className="text-xl font-bold">{issuer.legalName}</p>
-            <p className="mt-2 text-sm">CUIT: {issuer.taxId}</p>
+            {issuer.address && <p className="mt-2 text-sm">{issuer.address}</p>}
+            <p className={issuer.address ? 'text-sm' : 'mt-2 text-sm'}>CUIT: {issuer.taxId}</p>
             <p className="text-sm">{ISSUER_CONDITIONS[issuer.taxCondition]}</p>
-            {issuer.grossIncomeId && <p className="text-sm">IIBB: {issuer.grossIncomeId}</p>}
+            {issuer.grossIncomeId && <p className="text-sm">Ingresos Brutos: {issuer.grossIncomeId}</p>}
+            {issuer.activityStartedOn && (
+              <p className="text-sm">Inicio de actividades: {issuer.activityStartedOn}</p>
+            )}
           </div>
 
           <div className="border-l border-ink-900 p-5 text-right">
             <p className="text-lg font-bold">{TYPE_NAMES[data.type]}</p>
-            <p className="mt-2 text-sm">
-              N° {data.displayNumber ?? '—'}
-            </p>
-            <p className="text-sm">Fecha: {data.issuedOn}</p>
+            <p className="mt-2 text-sm">N° {data.displayNumber ?? '—'}</p>
+            <p className="text-sm">Fecha de emisión: {data.issuedOn}</p>
           </div>
 
-          {/* The big letter, straddling both halves. */}
-          <span className="absolute left-1/2 top-0 flex size-14 -translate-x-1/2 items-center justify-center border border-ink-900 bg-white text-3xl font-bold">
-            {data.type}
+          {/* The big letter, straddling both halves, with ARCA's own numeric
+              code underneath — both are required on the printed document. */}
+          <span className="absolute left-1/2 top-0 flex size-14 -translate-x-1/2 flex-col items-center justify-center border border-ink-900 bg-white leading-none">
+            <span className="text-3xl font-bold">{data.type}</span>
+            <span className="mt-0.5 text-[9px]">COD. {COMPROBANTE_CODE[data.type]}</span>
           </span>
         </header>
 
@@ -184,7 +188,8 @@ export function InvoicePrintPage() {
           <div className="text-right text-sm">
             {data.cae ? (
               <>
-                <p className="font-semibold">CAE N°: {data.cae}</p>
+                <p className="font-semibold">Comprobante Autorizado</p>
+                <p className="mt-1">CAE N°: {data.cae}</p>
                 <p>Fecha de vencimiento del CAE: {data.caeExpiresOn}</p>
               </>
             ) : (

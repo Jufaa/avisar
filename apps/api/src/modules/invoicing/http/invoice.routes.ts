@@ -15,6 +15,7 @@ const profileBody = z.object({
   legalName: z.string().trim().min(2, 'Enter the registered name'),
   taxCondition: z.enum(['MONOTRIBUTO', 'RESPONSABLE_INSCRIPTO', 'EXENTO']),
   salesPoint: z.coerce.number().int().min(1).max(99999),
+  address: z.string().trim().max(255).nullish(),
   grossIncomeId: z.string().trim().nullish(),
   activityStartedOn: z.string().trim().nullish(),
 });
@@ -96,6 +97,7 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
       legalName: body.legalName,
       taxCondition: body.taxCondition,
       salesPoint: body.salesPoint,
+      address: body.address || null,
       grossIncomeId: body.grossIncomeId || null,
       activityStartedOn: body.activityStartedOn ? new Date(body.activityStartedOn) : null,
     });

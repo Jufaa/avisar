@@ -29,7 +29,9 @@ export function BillingProfileForm({
     legalName: profile?.legalName ?? '',
     taxCondition: profile?.taxCondition ?? 'MONOTRIBUTO',
     salesPoint: String(profile?.salesPoint ?? 1),
+    address: profile?.address ?? '',
     grossIncomeId: profile?.grossIncomeId ?? '',
+    activityStartedOn: profile?.activityStartedOn ?? '',
   });
 
   function set<K extends keyof typeof form>(key: K, value: string) {
@@ -46,7 +48,9 @@ export function BillingProfileForm({
         legalName: form.legalName.trim(),
         taxCondition: form.taxCondition,
         salesPoint: Number(form.salesPoint),
+        address: form.address.trim() || null,
         grossIncomeId: form.grossIncomeId.trim() || null,
+        activityStartedOn: form.activityStartedOn || null,
       },
       {
         onSuccess: () => onSaved?.(),
@@ -101,9 +105,26 @@ export function BillingProfileForm({
       />
 
       <TextField
-        label="Ingresos brutos (opcional)"
+        label="Domicilio comercial"
+        placeholder="Belgrano 1234, Río Cuarto"
+        value={form.address}
+        onChange={(event) => set('address', event.target.value)}
+        hint="Va impreso en la factura. La RG 1415 lo exige."
+      />
+
+      <TextField
+        label="Ingresos brutos"
         value={form.grossIncomeId}
         onChange={(event) => set('grossIncomeId', event.target.value)}
+        hint="Si estás en Convenio Multilateral o inscripto en tu provincia."
+      />
+
+      <TextField
+        label="Inicio de actividades"
+        type="date"
+        value={form.activityStartedOn}
+        onChange={(event) => set('activityStartedOn', event.target.value)}
+        hint="La fecha de tu constancia de inscripción."
       />
 
       <Button type="submit" size="lg" loading={save.isPending}>

@@ -42,6 +42,7 @@ export interface BillingProfileInput {
   legalName: string;
   taxCondition: BillingProfileDto['taxCondition'];
   salesPoint: number;
+  address: string | null;
   grossIncomeId: string | null;
   activityStartedOn: Date | null;
 }

@@ -399,6 +399,9 @@ model BillingProfile {
   /// this is not cosmetic: changing it starts a new sequence.
   salesPoint   Int          @map("sales_point")
 
+  /// Commercial address. Required on the printed document by RG 1415, so it
+  /// is asked once here rather than discovered missing at print time.
+  address           String?   @map("address")
   grossIncomeId     String?   @map("gross_income_id")
   activityStartedOn DateTime? @map("activity_started_on") @db.Date
 

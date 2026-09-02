@@ -177,6 +177,7 @@ export interface BillingProfileDto {
   legalName: string;
   taxCondition: TaxCondition;
   salesPoint: number;
+  address: string | null;
   grossIncomeId: string | null;
   activityStartedOn: string | null;
 }

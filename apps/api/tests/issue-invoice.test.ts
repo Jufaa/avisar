@@ -13,6 +13,7 @@ const PROFILE: BillingProfileDto = {
   legalName: 'Centro de Kinesiología Belgrano',
   taxCondition: 'MONOTRIBUTO',
   salesPoint: 3,
+  address: 'Belgrano 1234, Río Cuarto',
   grossIncomeId: null,
   activityStartedOn: null,
 };

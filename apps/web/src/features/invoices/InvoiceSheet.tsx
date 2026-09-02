@@ -45,6 +45,7 @@ export function InvoiceSheet({
   const [receiverDocKind, setReceiverDocKind] = useState('DNI');
   const [receiverDocNumber, setReceiverDocNumber] = useState('');
   const [receiverTaxCondition, setReceiverTaxCondition] = useState('CONSUMIDOR_FINAL');
+  const [receiverAddress, setReceiverAddress] = useState('');
   const [lines, setLines] = useState<LineDraft[]>([{ ...EMPTY_LINE }]);
 
   // Shown live so nobody presses "Revisar" to find out what it costs. The API
@@ -73,6 +74,7 @@ export function InvoiceSheet({
     setReceiverDocNumber('');
     setReceiverDocKind('DNI');
     setReceiverTaxCondition('CONSUMIDOR_FINAL');
+    setReceiverAddress('');
     setLines([{ ...EMPTY_LINE }]);
     setPending(null);
     setError(null);
@@ -93,6 +95,7 @@ export function InvoiceSheet({
         receiverDocKind,
         receiverDocNumber,
         receiverTaxCondition,
+        receiverAddress,
         lines: lines.map((line) => ({
           description: line.description,
           quantity: Number(line.quantity),
@@ -187,6 +190,13 @@ export function InvoiceSheet({
               <option key={patient.id} value={patient.fullName} />
             ))}
           </datalist>
+
+          <TextField
+            label="Domicilio del cliente"
+            placeholder="Opcional"
+            value={receiverAddress}
+            onChange={(event) => setReceiverAddress(event.target.value)}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <SelectField
