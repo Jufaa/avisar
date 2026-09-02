@@ -18,14 +18,15 @@ interface SheetProps {
 export function Sheet({ open, title, description, onClose, children, footer }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Opening is the event that moves focus — never a re-render.
+  //
+  // This effect deliberately depends on `open` alone. Adding `onClose` here
+  // once meant that a caller passing an inline arrow refocused the panel on
+  // every keystroke, which pulled the cursor out of whatever input the user
+  // was typing in after a single letter.
   useEffect(() => {
     if (!open) return;
 
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', onKeyDown);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
@@ -34,9 +35,21 @@ export function Sheet({ open, title, description, onClose, children, footer }: S
     panelRef.current?.focus();
 
     return () => {
-      document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
+  }, [open]);
+
+  // Separate, because this one genuinely needs the current `onClose`.
+  // Re-subscribing a listener is free; stealing focus is not.
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
 
   if (!open) return null;
