@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/*
+  The audience is adults who are not comfortable with software. Every choice
+  here is aimed at that: large text, large tap targets, high contrast, and no
+  decorative color that could be mistaken for a control.
+*/
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink-900: #14201c;
+  --color-ink-700: #33443d;
+  --color-ink-500: #5f7269;
+  --color-ink-300: #94a59d;
+
+  --color-line: #d6e0da;
+  --color-line-soft: #e8efeb;
+  --color-ground: #f3f6f4;
+  --color-surface: #ffffff;
+
+  --color-brand-50: #eef6f1;
+  --color-brand-100: #ddeae2;
+  --color-brand-500: #1f6e4e;
+  --color-brand-600: #1a5c41;
+  --color-brand-700: #14503a;
+
+  --color-warn-50: #fdf3e2;
+  --color-warn-600: #9a6410;
+  --color-danger-50: #fbeae8;
+  --color-danger-600: #9e3a31;
+  --color-info-50: #e9f0f7;
+  --color-info-600: #2c5f8a;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Keyboard users must always be able to see where they are. */
+:focus-visible {
+  outline: 3px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

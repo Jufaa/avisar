@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: avisar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: avisar
+      POSTGRES_PASSWORD: avisar
+      POSTGRES_DB: avisar
+    ports:
+      - "5433:5432"
+    volumes:
+      - avisar-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U avisar -d avisar"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  avisar-pgdata:

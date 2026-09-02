@@ -1,0 +1,884 @@
+<title>Plano del Consultorio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground:      #F3F6F4;
+    --surface:     #FFFFFF;
+    --surface-alt: #EBF1ED;
+    --ink:         #14201C;
+    --ink-soft:    #33443D;
+    --muted:       #5F7269;
+    --line:        #D6E0DA;
+    --line-soft:   #E5ECE7;
+    --accent:      #1F6E4E;
+    --accent-ink:  #14503A;
+    --accent-soft: #DDEAE2;
+    --warn:        #9A6410;
+    --warn-soft:   #F4E9D6;
+    --crit:        #9E3A31;
+    --crit-soft:   #F5E1DE;
+    --defer:       #5F7269;
+    --defer-soft:  #E5ECE7;
+
+    --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --f-body:    "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono:    "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+    --pad: clamp(1.25rem, 4vw, 3.5rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0D1512;
+      --surface:     #151F1B;
+      --surface-alt: #1C2823;
+      --ink:         #E3EDE7;
+      --ink-soft:    #BDCCC5;
+      --muted:       #8A9D95;
+      --line:        #2B3A34;
+      --line-soft:   #212E29;
+      --accent:      #55B384;
+      --accent-ink:  #7FCBA4;
+      --accent-soft: #1B3128;
+      --warn:        #D9A44E;
+      --warn-soft:   #33280F;
+      --crit:        #E08078;
+      --crit-soft:   #351C19;
+      --defer:       #8A9D95;
+      --defer-soft:  #212E29;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0D1512;
+    --surface:     #151F1B;
+    --surface-alt: #1C2823;
+    --ink:         #E3EDE7;
+    --ink-soft:    #BDCCC5;
+    --muted:       #8A9D95;
+    --line:        #2B3A34;
+    --line-soft:   #212E29;
+    --accent:      #55B384;
+    --accent-ink:  #7FCBA4;
+    --accent-soft: #1B3128;
+    --warn:        #D9A44E;
+    --warn-soft:   #33280F;
+    --crit:        #E08078;
+    --crit-soft:   #351C19;
+    --defer:       #8A9D95;
+    --defer-soft:  #212E29;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: var(--pad);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2.75rem, 6vw, 4.5rem);
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 500;
+    font-size: clamp(2.4rem, 7vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  .standfirst {
+    font-family: var(--f-display);
+    font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin: 0;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+  .chip {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    padding: 0.3rem 0.6rem;
+    border-radius: 2px;
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border: 1px solid transparent;
+  }
+  .chip[data-kind="defer"] { background: var(--defer-soft); color: var(--defer); }
+
+  /* ---------- sections ---------- */
+
+  section { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .sec-head { display: flex; flex-direction: column; gap: 0.4rem; }
+
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 500;
+    font-size: clamp(1.6rem, 3.6vw, 2.15rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--f-body);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+    margin: 0;
+  }
+
+  p { margin: 0; max-width: var(--measure); }
+  p + p { margin-top: 0.85rem; }
+
+  .lede { color: var(--ink-soft); }
+
+  a { color: var(--accent-ink); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  code, .mono { font-family: var(--f-mono); font-size: 0.87em; }
+
+  p code, li code, td code {
+    background: var(--surface-alt);
+    padding: 0.1em 0.35em;
+    border-radius: 2px;
+  }
+
+  /* ---------- cards ---------- */
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1.35rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .grid-2 {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(255px, 1fr));
+  }
+
+  .card .why { color: var(--muted); font-size: 0.92rem; }
+
+  /* ---------- decisions ---------- */
+
+  .decision {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 3px;
+    padding: 1.25rem 1.4rem;
+  }
+  .decision h3 { font-size: 1.02rem; }
+  .decision .verdict { font-size: 0.95rem; color: var(--ink-soft); }
+  .decision .conseq {
+    font-size: 0.88rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--line);
+    padding-top: 0.6rem;
+  }
+  .decision[data-state="defer"] { border-left-color: var(--defer); }
+
+  /* ---------- tables ---------- */
+
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 3px; background: var(--surface); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+
+  th {
+    font-family: var(--f-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    font-weight: 500;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 500; white-space: nowrap; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- entity map ---------- */
+
+  .entities {
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  }
+
+  .entity {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .entity > header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .entity > header .name {
+    font-family: var(--f-mono);
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .entity > header .tag {
+    font-family: var(--f-mono);
+    font-size: 0.64rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .entity[data-phase="2"] > header { background: var(--accent-soft); }
+  .entity[data-phase="2"] > header .tag { color: var(--accent-ink); }
+
+  .fields { list-style: none; margin: 0; padding: 0.55rem 0.9rem 0.75rem; display: flex; flex-direction: column; gap: 0.22rem; }
+  .fields li { font-family: var(--f-mono); font-size: 0.775rem; line-height: 1.5; color: var(--ink-soft); }
+  .fields li .fk { color: var(--accent); }
+  .fields li .note { color: var(--muted); }
+
+  .entity .foot {
+    margin-top: auto;
+    padding: 0.55rem 0.9rem 0.75rem;
+    border-top: 1px dashed var(--line);
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  /* ---------- flow / steps ---------- */
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+
+  ol.steps > li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.9rem;
+    align-items: start;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.85rem 1rem;
+  }
+
+  ol.steps > li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--f-mono);
+    font-size: 0.78rem;
+    color: var(--accent);
+    padding-top: 0.12rem;
+  }
+
+  ol.steps .what { font-weight: 500; font-size: 0.94rem; }
+  ol.steps .detail { color: var(--muted); font-size: 0.87rem; margin-top: 0.15rem; }
+
+  /* ---------- tree ---------- */
+
+  pre.tree {
+    margin: 0;
+    padding: 1.2rem 1.35rem;
+    font-family: var(--f-mono);
+    font-size: 0.79rem;
+    line-height: 1.75;
+    color: var(--ink-soft);
+    white-space: pre;
+  }
+  pre.tree b { color: var(--ink); font-weight: 500; }
+  pre.tree i { color: var(--muted); font-style: normal; }
+  pre.tree u { color: var(--accent); text-decoration: none; }
+
+  /* ---------- layers ---------- */
+
+  .layers { display: flex; flex-direction: column; gap: 0; }
+
+  .layer {
+    display: grid;
+    grid-template-columns: minmax(120px, 0.7fr) minmax(0, 2fr);
+    gap: 1rem;
+    padding: 0.95rem 1.2rem;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    align-items: baseline;
+  }
+  .layer:first-child { border-radius: 3px 3px 0 0; }
+  .layer:last-child { border-bottom: 1px solid var(--line); border-radius: 0 0 3px 3px; }
+
+  .layer .lname { font-family: var(--f-mono); font-size: 0.82rem; color: var(--accent); }
+  .layer .ldesc { font-size: 0.89rem; color: var(--ink-soft); }
+  .layer .ldesc em { color: var(--muted); font-style: normal; display: block; font-size: 0.83rem; margin-top: 0.15rem; }
+
+  .arrow {
+    font-family: var(--f-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 0.35rem 0;
+    letter-spacing: 0.08em;
+  }
+
+  /* ---------- scope ---------- */
+
+  ul.scope { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.45rem; }
+  ul.scope li { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr); gap: 0.55rem; font-size: 0.92rem; align-items: baseline; }
+  ul.scope li::before { font-family: var(--f-mono); font-size: 0.8rem; }
+  ul.scope li[data-in="yes"]::before { content: "+"; color: var(--accent); }
+  ul.scope li[data-in="no"]::before  { content: "\2212"; color: var(--muted); }
+  ul.scope li[data-in="no"] { color: var(--muted); }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    background: var(--warn-soft);
+    border: 1px solid transparent;
+    border-left: 3px solid var(--warn);
+    border-radius: 3px;
+    padding: 1.05rem 1.3rem;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .callout strong { color: var(--ink); }
+
+  footer.end {
+    border-top: 1px solid var(--line);
+    padding-top: 1.5rem;
+    font-family: var(--f-mono);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+
+  @media (max-width: 560px) {
+    .layer { grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">Documento de arquitectura &middot; MVP</div>
+    <h1>Plano del Consultorio</h1>
+    <p class="standfirst">Una app de agenda para profesionales de la salud, construida alrededor de un solo trabajo: que el recordatorio del turno llegue por WhatsApp sin que nadie se acuerde de mandarlo.</p>
+    <div class="chips">
+      <span class="chip">Node + TypeScript</span>
+      <span class="chip">PostgreSQL</span>
+      <span class="chip">React</span>
+      <span class="chip">Arquitectura hexagonal</span>
+      <span class="chip" data-kind="defer">WhatsApp: mockeado en fase 1</span>
+    </div>
+  </header>
+
+  <!-- ============ 1. ALCANCE ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Alcance</div>
+      <h2>Qué entra y qué no</h2>
+    </div>
+    <p class="lede">El riesgo más grande de un MVP no es construir mal, es construir de más. Esta lista es tan importante por lo que deja afuera como por lo que incluye.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Entra en el MVP</h3>
+        <ul class="scope">
+          <li data-in="yes">Alta de cuenta con onboarding guiado</li>
+          <li data-in="yes">Pacientes: alta, edición, búsqueda</li>
+          <li data-in="yes">Profesionales como fichas de agenda</li>
+          <li data-in="yes">Turnos con estado y duración</li>
+          <li data-in="yes">Vista de agenda diaria y semanal</li>
+          <li data-in="yes">Recordatorio automático por WhatsApp</li>
+          <li data-in="yes">Plantilla de mensaje editable</li>
+          <li data-in="yes">Link de confirmar o cancelar para el paciente</li>
+          <li data-in="yes">Registro de mensajes enviados y fallidos</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Queda afuera, a propósito</h3>
+        <ul class="scope">
+          <li data-in="no">Login para cada profesional</li>
+          <li data-in="no">Roles y permisos</li>
+          <li data-in="no">Cobro y facturación</li>
+          <li data-in="no">Historia clínica</li>
+          <li data-in="no">Reserva online por parte del paciente</li>
+          <li data-in="no">Turnos recurrentes</li>
+          <li data-in="no">Recordatorios por SMS o email</li>
+          <li data-in="no">App nativa (la web es responsive)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. DECISIONES ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Decisiones cerradas</div>
+      <h2>Las tres que definen todo lo demás</h2>
+    </div>
+
+    <div class="decision">
+      <h3>Una sola persona con acceso</h3>
+      <p class="verdict">La cuenta tiene un único usuario con login: el dueño del consultorio o quien atiende la recepción. Los profesionales existen como fichas de agenda, sin credenciales.</p>
+      <p class="conseq">Elimina roles, permisos, invitaciones y filtrado de agenda del MVP. El campo <code>professional.user_id</code> queda creado y en <code>null</code>: sumar logins más adelante es una feature nueva, no una migración de datos con clientes ya facturando.</p>
+    </div>
+
+    <div class="decision">
+      <h3>Los recordatorios viven en la base, no en la memoria</h3>
+      <p class="verdict">Cuando se crea un turno se calcula y se guarda la fila del recordatorio con su hora exacta de envío. Un proceso programado consulta cada minuto qué está vencido y sin enviar.</p>
+      <p class="conseq">Patrón <em>outbox</em>. Si el servidor se reinicia o se cae media hora, los recordatorios de esa ventana siguen en la tabla y salen al volver. Un temporizador en memoria los habría perdido en silencio.</p>
+    </div>
+
+    <div class="decision" data-state="defer">
+      <h3>WhatsApp entra detrás de una interfaz</h3>
+      <p class="verdict">El caso de uso depende de un contrato llamado <code>NotificationProvider</code>, nunca de Twilio. La primera implementación escribe el mensaje en la consola.</p>
+      <p class="conseq">Se desarrolla y se testea la lógica completa de recordatorios sin gastar un peso ni depender de aprobaciones de plantilla. Twilio pasa a ser un archivo nuevo y una variable de entorno.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. ARQUITECTURA ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Arquitectura</div>
+      <h2>Hexagonal, por módulo de negocio</h2>
+    </div>
+    <p class="lede">Las carpetas se nombran por lo que hace el negocio, no por lo que usa la tecnología. Abrir el proyecto tiene que contar qué hace la app, no con qué framework está escrita.</p>
+
+    <div class="layers">
+      <div class="layer">
+        <span class="lname">http/</span>
+        <span class="ldesc">Rutas, validación de entrada y forma de la respuesta.<em>Lo único que sabe que existe HTTP.</em></span>
+      </div>
+      <div class="arrow">&darr; llama a</div>
+      <div class="layer">
+        <span class="lname">application/</span>
+        <span class="ldesc">Casos de uso. Un archivo por acción del negocio: <code>createAppointment</code>, <code>scheduleReminders</code>.<em>Orquesta. No sabe de HTTP ni de SQL.</em></span>
+      </div>
+      <div class="arrow">&darr; depende de</div>
+      <div class="layer">
+        <span class="lname">domain/</span>
+        <span class="ldesc">Entidades, reglas e <em>interfaces</em> de repositorio y de proveedores.<em>Cero dependencias externas. Es el centro.</em></span>
+      </div>
+      <div class="arrow">&uarr; implementadas por</div>
+      <div class="layer">
+        <span class="lname">infrastructure/</span>
+        <span class="ldesc">Repositorios con Prisma, cliente de Twilio, envío de mails.<em>Todo lo reemplazable vive acá.</em></span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>La flecha de abajo apunta para arriba.</strong> <code>infrastructure</code> depende de <code>domain</code>, nunca al revés. Por eso se puede cambiar Twilio por Meta, o Prisma por otro ORM, sin tocar una línea de la lógica de negocio. Es la única regla de esta arquitectura que no se negocia.
+    </div>
+
+    <div class="scroll">
+<pre class="tree"><b>notificaciones-avisar/</b>
+├── <b>apps/</b>
+│   ├── <b>api/</b>
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma          <i>las 9 tablas</i>
+│   │   │   └── seed.ts
+│   │   └── src/
+│   │       ├── <b>modules/</b>                <i>screaming architecture</i>
+│   │       │   ├── auth/
+│   │       │   ├── organizations/
+│   │       │   ├── professionals/
+│   │       │   ├── patients/
+│   │       │   │   ├── domain/
+│   │       │   │   │   ├── patient.ts
+│   │       │   │   │   └── patient.repository.ts   <i>interfaz</i>
+│   │       │   │   ├── application/
+│   │       │   │   │   ├── create-patient.ts
+│   │       │   │   │   └── list-patients.ts
+│   │       │   │   ├── infrastructure/
+│   │       │   │   │   └── prisma-patient.repository.ts
+│   │       │   │   └── http/
+│   │       │   │       ├── patient.routes.ts
+│   │       │   │       └── patient.schemas.ts
+│   │       │   ├── appointments/
+│   │       │   └── <b>notifications/</b>
+│   │       │       ├── domain/
+│   │       │       │   └── <u>notification-provider.ts</u>   <i>&larr; el contrato</i>
+│   │       │       ├── application/
+│   │       │       │   ├── schedule-appointment-reminders.ts
+│   │       │       │   └── dispatch-due-reminders.ts
+│   │       │       └── infrastructure/providers/
+│   │       │           ├── <u>console.provider.ts</u>        <i>fase 1</i>
+│   │       │           ├── <u>fake.provider.ts</u>           <i>tests</i>
+│   │       │           └── <u>twilio.provider.ts</u>         <i>fase 5</i>
+│   │       ├── shared/                <i>errores, result, kernel http</i>
+│   │       ├── jobs/
+│   │       │   └── reminder.job.ts
+│   │       └── main.ts
+│   └── <b>web/</b>
+│       └── src/
+│           ├── features/              <i>agenda, patients, onboarding</i>
+│           ├── components/ui/         <i>atomic design</i>
+│           └── lib/
+└── <b>packages/</b>
+    └── shared/                        <i>tipos y DTOs compartidos</i></pre>
+    </div>
+  </section>
+
+  <!-- ============ 4. TECNOLOGÍAS ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Stack</div>
+      <h2>Tecnologías y el motivo de cada una</h2>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Capa</th><th>Elección</th><th>Por qué esta y no otra</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Lenguaje</td>
+            <td class="mono">TypeScript</td>
+            <td>Un turno mal tipado es un turno perdido. El tipado va de punta a punta, del schema al componente.</td>
+          </tr>
+          <tr>
+            <td>Servidor HTTP</td>
+            <td class="mono">Fastify</td>
+            <td>Valida con JSON Schema de forma nativa: la misma definición sirve de validación, de tipo y de documentación.</td>
+          </tr>
+          <tr>
+            <td>Base de datos</td>
+            <td class="mono">PostgreSQL</td>
+            <td>Necesitamos <code>timestamptz</code> real, constraints únicas y <code>SKIP LOCKED</code> para el envío concurrente. Los tres son de Postgres.</td>
+          </tr>
+          <tr>
+            <td>Acceso a datos</td>
+            <td class="mono">Prisma</td>
+            <td>Migraciones versionadas desde el día uno. Sin migraciones no hay forma segura de evolucionar con clientes reales.</td>
+          </tr>
+          <tr>
+            <td>Autenticación</td>
+            <td class="mono">JWT propio</td>
+            <td>Con un solo usuario por cuenta, un proveedor externo agrega costo y fricción de onboarding sin resolver nada.</td>
+          </tr>
+          <tr>
+            <td>Recordatorios</td>
+            <td class="mono">node-cron + outbox</td>
+            <td>Una cola con Redis es infraestructura que este volumen no justifica. La tabla ya da durabilidad y reintentos.</td>
+          </tr>
+          <tr>
+            <td>WhatsApp</td>
+            <td class="mono">Twilio</td>
+            <td>Sandbox gratuito para desarrollo y el camino más corto a producción. Aislado detrás de la interfaz por si cambia.</td>
+          </tr>
+          <tr>
+            <td>Frontend</td>
+            <td class="mono">React + Vite</td>
+            <td>Arranque instantáneo en desarrollo y build sin configurar nada.</td>
+          </tr>
+          <tr>
+            <td>Estilos</td>
+            <td class="mono">TailwindCSS</td>
+            <td>Mobile-first por defecto, que es el modo en que esta app se va a usar realmente.</td>
+          </tr>
+          <tr>
+            <td>Datos en el cliente</td>
+            <td class="mono">TanStack Query</td>
+            <td>Cache, reintentos y refresco de la agenda sin escribir un solo estado de carga a mano.</td>
+          </tr>
+          <tr>
+            <td>Fechas</td>
+            <td class="mono">date-fns + date-fns-tz</td>
+            <td>La zona horaria de la organización es un dato, no un supuesto. Se guarda en UTC y se muestra en local.</td>
+          </tr>
+          <tr>
+            <td>Tests</td>
+            <td class="mono">Vitest</td>
+            <td>Los casos de uso se testean contra repositorios en memoria, sin levantar la base.</td>
+          </tr>
+          <tr>
+            <td>Monorepo</td>
+            <td class="mono">pnpm workspaces</td>
+            <td>API y web comparten tipos sin publicar paquetes ni duplicar interfaces.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 5. BASE DE DATOS ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Base de datos</div>
+      <h2>Nueve tablas, todas desde la primera migración</h2>
+    </div>
+    <p class="lede">Las cuatro tablas de recordatorios se crean ahora aunque el feature llegue en la fase 4. Vacías no molestan a nadie; agregarlas después, con turnos reales adentro, sí.</p>
+
+    <div class="entities">
+
+      <div class="entity" data-phase="1">
+        <header><span class="name">organization</span><span class="tag">el tenant</span></header>
+        <ul class="fields">
+          <li>id <span class="note">uuid pk</span></li>
+          <li>name</li>
+          <li>timezone <span class="note">America/Argentina/…</span></li>
+          <li>plan <span class="note">enum</span></li>
+          <li>max_users <span class="note">int</span></li>
+          <li>created_at</li>
+        </ul>
+        <div class="foot">Todo cuelga de acá. Cada consulta filtra por <code>organization_id</code>.</div>
+      </div>
+
+      <div class="entity" data-phase="1">
+        <header><span class="name">user</span><span class="tag">login</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li>email <span class="note">unique</span></li>
+          <li>password_hash</li>
+          <li>full_name</li>
+          <li>last_login_at</li>
+        </ul>
+        <div class="foot">Uno solo por organización durante todo el MVP.</div>
+      </div>
+
+      <div class="entity" data-phase="1">
+        <header><span class="name">professional</span><span class="tag">agenda</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li><span class="fk">user_id</span> <span class="note">null &rarr; sin login</span></li>
+          <li>full_name</li>
+          <li>specialty</li>
+          <li>default_duration_min</li>
+          <li>color <span class="note">para la agenda</span></li>
+          <li>active <span class="note">bool</span></li>
+        </ul>
+        <div class="foot">La puerta abierta al multiusuario está en <code>user_id</code>.</div>
+      </div>
+
+      <div class="entity" data-phase="1">
+        <header><span class="name">patient</span><span class="tag">contacto</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li>full_name</li>
+          <li>phone_e164 <span class="note">+549…</span></li>
+          <li>email <span class="note">opcional</span></li>
+          <li>whatsapp_opt_in <span class="note">bool</span></li>
+          <li>notes</li>
+        </ul>
+        <div class="foot">El teléfono se normaliza al entrar, nunca se guarda como lo tipearon.</div>
+      </div>
+
+      <div class="entity" data-phase="1">
+        <header><span class="name">appointment</span><span class="tag">el turno</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li><span class="fk">professional_id</span></li>
+          <li><span class="fk">patient_id</span></li>
+          <li>starts_at <span class="note">timestamptz</span></li>
+          <li>duration_min</li>
+          <li>status <span class="note">enum</span></li>
+          <li>notes, cancelled_at</li>
+        </ul>
+        <div class="foot">Un instante, no fecha + hora sueltas. <code>PENDING · CONFIRMED · CANCELLED · NO_SHOW</code></div>
+      </div>
+
+      <div class="entity" data-phase="2">
+        <header><span class="name">message_template</span><span class="tag">fase 4</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li>name</li>
+          <li>kind <span class="note">REMINDER · CONFIRM</span></li>
+          <li>body <span class="note">{nombre_paciente}…</span></li>
+        </ul>
+        <div class="foot">Editable por el usuario, con variables reemplazadas al enviar.</div>
+      </div>
+
+      <div class="entity" data-phase="2">
+        <header><span class="name">reminder_rule</span><span class="tag">fase 4</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li><span class="fk">professional_id</span> <span class="note">null &rarr; toda la org</span></li>
+          <li><span class="fk">template_id</span></li>
+          <li>hours_before <span class="note">int</span></li>
+          <li>enabled <span class="note">bool</span></li>
+        </ul>
+        <div class="foot">Varias reglas por turno: 24 h antes y 2 h antes conviven sin código extra.</div>
+      </div>
+
+      <div class="entity" data-phase="2">
+        <header><span class="name">notification</span><span class="tag">outbox · fase 4</span></header>
+        <ul class="fields">
+          <li><span class="fk">organization_id</span></li>
+          <li><span class="fk">appointment_id</span></li>
+          <li><span class="fk">rule_id</span></li>
+          <li>scheduled_for <span class="note">timestamptz</span></li>
+          <li>status <span class="note">enum</span></li>
+          <li>attempts <span class="note">int</span></li>
+          <li>provider_message_id</li>
+          <li>error, sent_at</li>
+        </ul>
+        <div class="foot">El corazón del feature. <code>PENDING · SENT · FAILED · CANCELLED</code></div>
+      </div>
+
+      <div class="entity" data-phase="2">
+        <header><span class="name">appointment_action_token</span><span class="tag">fase 5</span></header>
+        <ul class="fields">
+          <li><span class="fk">appointment_id</span></li>
+          <li>token <span class="note">unique, opaco</span></li>
+          <li>action <span class="note">CONFIRM · CANCEL</span></li>
+          <li>expires_at</li>
+          <li>used_at <span class="note">un solo uso</span></li>
+        </ul>
+        <div class="foot">Nunca el id del turno en la URL: cualquiera iteraría ids y cancelaría turnos ajenos.</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:0.75rem;">Las restricciones que sostienen el feature</h3>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Tabla</th><th>Restricción</th><th>Qué problema evita</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">notification</td>
+            <td class="mono">unique (appointment_id, rule_id)</td>
+            <td>Que el paciente reciba el mismo recordatorio dos veces. Es el error que más rompe la confianza y el que menos se anticipa.</td>
+          </tr>
+          <tr>
+            <td class="mono">notification</td>
+            <td class="mono">index (status, scheduled_for)</td>
+            <td>Que la consulta del job siga siendo instantánea con cien mil filas enviadas acumuladas.</td>
+          </tr>
+          <tr>
+            <td class="mono">appointment</td>
+            <td class="mono">index (professional_id, starts_at)</td>
+            <td>Que la agenda semanal se dibuje en una sola consulta rápida.</td>
+          </tr>
+          <tr>
+            <td class="mono">patient</td>
+            <td class="mono">unique (organization_id, phone_e164)</td>
+            <td>Pacientes duplicados por tipear el mismo teléfono con otro formato.</td>
+          </tr>
+          <tr>
+            <td class="mono">professional</td>
+            <td class="mono">unique (user_id) nullable</td>
+            <td>Que un mismo login quede atado a dos agendas el día que se habiliten los accesos.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 6. FLUJO ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Flujo principal</div>
+      <h2>El camino de un recordatorio</h2>
+    </div>
+    <p class="lede">Esta secuencia es el producto entero. Todo lo demás existe para que estos ocho pasos ocurran solos.</p>
+
+    <ol class="steps">
+      <li><div><div class="what">Se carga el turno</div><div class="detail">La recepcionista elige paciente, profesional y horario. Tres campos.</div></div></li>
+      <li><div><div class="what">Se leen las reglas activas</div><div class="detail">Por ejemplo: una a 24 horas antes y otra a 2 horas antes.</div></div></li>
+      <li><div><div class="what">Se calcula la hora de envío</div><div class="detail"><code>scheduled_for = starts_at − hours_before</code>, en la zona horaria de la organización.</div></div></li>
+      <li><div><div class="what">Se guarda la fila del recordatorio</div><div class="detail">Estado <code>PENDING</code>. Si ya existía por esa regla, la constraint única la ignora sin error.</div></div></li>
+      <li><div><div class="what">El job despierta cada minuto</div><div class="detail">Busca lo vencido y sin enviar con <code>FOR UPDATE SKIP LOCKED</code>, para que dos procesos nunca tomen la misma fila.</div></div></li>
+      <li><div><div class="what">Se arma y se envía el mensaje</div><div class="detail">Se reemplazan las variables de la plantilla y se llama a <code>NotificationProvider.send()</code>, sin saber quién está del otro lado.</div></div></li>
+      <li><div><div class="what">Se registra el resultado</div><div class="detail"><code>SENT</code> con el id del proveedor, o <code>FAILED</code> con el error y un intento más contado.</div></div></li>
+      <li><div><div class="what">El paciente responde con un clic</div><div class="detail">El token de un solo uso cambia el estado del turno y la agenda lo refleja al instante.</div></div></li>
+    </ol>
+
+    <div class="callout">
+      <strong>Si el turno se cancela o se mueve</strong>, sus recordatorios pendientes pasan a <code>CANCELLED</code> y se recalculan los nuevos. Un recordatorio de un turno que ya no existe es peor que no mandar nada.
+    </div>
+  </section>
+
+  <!-- ============ 7. FASES ============ -->
+  <section>
+    <div class="sec-head">
+      <div class="eyebrow">Plan de construcción</div>
+      <h2>En qué orden se levanta</h2>
+    </div>
+    <p class="lede">Cada fase termina en algo que se puede abrir y usar. Nada de tres semanas de andamios antes de ver una pantalla.</p>
+
+    <ol class="steps">
+      <li><div><div class="what">Esqueleto, base de datos y acceso</div><div class="detail">Monorepo, las nueve tablas migradas, registro y login funcionando.</div></div></li>
+      <li><div><div class="what">Pacientes de punta a punta</div><div class="detail">Alta, edición, búsqueda y normalización del teléfono. El módulo que fija el patrón para todos los demás.</div></div></li>
+      <li><div><div class="what">Profesionales, turnos y agenda</div><div class="detail">Vista diaria y semanal, mobile primero. Acá la app ya sirve para trabajar.</div></div></li>
+      <li><div><div class="what">Recordatorios con proveedor de consola</div><div class="detail">Reglas, plantillas, outbox y job completos. El mensaje se imprime en la terminal, la lógica es la definitiva.</div></div></li>
+      <li><div><div class="what">Twilio y links de confirmación</div><div class="detail">Se cambia una variable de entorno y sale por WhatsApp de verdad. El token de confirmar o cancelar entra acá.</div></div></li>
+      <li><div><div class="what">Onboarding guiado</div><div class="detail">Wizard de cuatro pasos: consultorio, profesional, primer paciente, primer turno.</div></div></li>
+    </ol>
+  </section>
+
+  <footer class="end">
+    <span>MVP &middot; recordatorios de turnos</span>
+    <span>Decisiones cerradas: acceso único, outbox, provider desacoplado</span>
+    <span>Próximo paso: fase 1</span>
+  </footer>
+
+</div>

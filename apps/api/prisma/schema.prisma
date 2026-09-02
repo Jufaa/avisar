@@ -1,0 +1,321 @@
+// ---------------------------------------------------------------------------
+// Avisar - appointment reminders for small health practices
+//
+// All nine tables are created up front, including the four that stay empty
+// until the reminder feature ships. Adding them later, with live appointments
+// already in the database, is the expensive path.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Plan {
+  FREE
+  SOLO
+  CLINIC
+}
+
+/// How the account is used, which is a different question from what it pays.
+///
+/// SOLO   — one professional who manages their own agenda. The concept of
+///          "professional" never appears in the interface: there is only "me".
+/// CLINIC — several professionals managed by whoever runs the front desk.
+enum AccountMode {
+  SOLO
+  CLINIC
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  NO_SHOW
+}
+
+enum NotificationChannel {
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  /// Claimed by a worker and handed to the provider. A row stuck here means
+  /// the process died mid-send; boot recovery returns it to PENDING.
+  SENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum TemplateKind {
+  REMINDER
+  CONFIRMATION
+}
+
+enum ActionKind {
+  CONFIRM
+  CANCEL
+}
+
+// ---------------------------------------------------------------------------
+// Tenant
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id       String @id @default(uuid())
+  name     String
+  /// IANA identifier, e.g. "America/Argentina/Buenos_Aires".
+  /// The timezone is a stored fact, never an assumption of the server clock.
+  timezone String @default("America/Argentina/Buenos_Aires")
+  plan     Plan        @default(FREE)
+  mode     AccountMode @default(SOLO)
+  maxUsers Int         @default(1) @map("max_users")
+
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  users         User[]
+  professionals Professional[]
+  patients      Patient[]
+  appointments  Appointment[]
+  templates     MessageTemplate[]
+  reminderRules ReminderRule[]
+  notifications Notification[]
+
+  @@map("organization")
+}
+
+// ---------------------------------------------------------------------------
+// Access
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  fullName     String    @map("full_name")
+  lastLoginAt  DateTime? @map("last_login_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  professional Professional?
+
+  @@index([organizationId])
+  @@map("user")
+}
+
+// ---------------------------------------------------------------------------
+// Agenda owners
+// ---------------------------------------------------------------------------
+
+model Professional {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+
+  /// Null means "agenda without login": the professional is managed by the
+  /// account owner and does not sign in. This is the whole multi-user story,
+  /// deferred to a single nullable column.
+  userId String? @unique @map("user_id")
+
+  fullName           String  @map("full_name")
+  specialty          String?
+  defaultDurationMin Int     @default(30) @map("default_duration_min")
+  /// Hex color used to tint the agenda.
+  color              String  @default("#1F6E4E")
+  active             Boolean @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user          User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  appointments  Appointment[]
+  reminderRules ReminderRule[]
+
+  @@index([organizationId, active])
+  @@map("professional")
+}
+
+// ---------------------------------------------------------------------------
+// Contacts
+// ---------------------------------------------------------------------------
+
+model Patient {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+
+  fullName String  @map("full_name")
+  /// Always normalized to E.164 (+549...) at the edge of the API.
+  /// Never stored the way it was typed.
+  phoneE164 String @map("phone_e164")
+  email     String?
+  notes     String?
+
+  whatsappOptIn Boolean @default(true) @map("whatsapp_opt_in")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  /// Stops the same person being created twice because the phone was typed
+  /// with a different format.
+  @@unique([organizationId, phoneE164])
+  @@index([organizationId, fullName])
+  @@map("patient")
+}
+
+// ---------------------------------------------------------------------------
+// The appointment
+// ---------------------------------------------------------------------------
+
+model Appointment {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+  professionalId String @map("professional_id")
+  patientId      String @map("patient_id")
+
+  /// A single instant, stored as timestamptz. Never a separate date + time:
+  /// that pair is ambiguous the moment a timezone enters the picture.
+  startsAt    DateTime          @map("starts_at") @db.Timestamptz(3)
+  durationMin Int               @default(30) @map("duration_min")
+  status      AppointmentStatus @default(PENDING)
+  notes       String?
+
+  cancelledAt   DateTime? @map("cancelled_at")
+  cancelReason  String?   @map("cancel_reason")
+  confirmedAt   DateTime? @map("confirmed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  professional Professional              @relation(fields: [professionalId], references: [id], onDelete: Restrict)
+  patient      Patient                   @relation(fields: [patientId], references: [id], onDelete: Restrict)
+  notifications Notification[]
+  actionTokens  AppointmentActionToken[]
+
+  /// Drives the agenda query: one professional over a date range.
+  @@index([professionalId, startsAt])
+  @@index([organizationId, startsAt])
+  @@map("appointment")
+}
+
+// ---------------------------------------------------------------------------
+// Reminders - created now, used from phase 4 onwards
+// ---------------------------------------------------------------------------
+
+model MessageTemplate {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+
+  name String
+  kind TemplateKind @default(REMINDER)
+  /// Free text with {nombre_paciente}, {fecha}, {hora}, {profesional},
+  /// {consultorio} and {link} placeholders.
+  body String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reminderRules ReminderRule[]
+
+  @@index([organizationId, kind])
+  @@map("message_template")
+}
+
+model ReminderRule {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+  /// Null applies the rule to every professional in the organization.
+  /// A value overrides the organization default for that one agenda.
+  professionalId String? @map("professional_id")
+  templateId     String  @map("template_id")
+
+  hoursBefore Int                 @map("hours_before")
+  channel     NotificationChannel @default(WHATSAPP)
+  enabled     Boolean             @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization  Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  professional  Professional?  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  template      MessageTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  notifications Notification[]
+
+  @@unique([organizationId, professionalId, hoursBefore])
+  @@index([organizationId, enabled])
+  @@map("reminder_rule")
+}
+
+/// The outbox. A reminder that lives here survives a restart; a reminder that
+/// lives in a setTimeout does not.
+model Notification {
+  id             String @id @default(uuid())
+  organizationId String @map("organization_id")
+  appointmentId  String @map("appointment_id")
+  ruleId         String @map("rule_id")
+
+  channel      NotificationChannel @default(WHATSAPP)
+  scheduledFor DateTime            @map("scheduled_for") @db.Timestamptz(3)
+  status       NotificationStatus  @default(PENDING)
+  attempts     Int                 @default(0)
+
+  toPhone           String  @map("to_phone")
+  renderedBody      String? @map("rendered_body")
+  providerMessageId String? @map("provider_message_id")
+  error             String?
+
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appointment  Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  rule         ReminderRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  /// The constraint that keeps a patient from receiving the same reminder
+  /// twice. Everything else about this feature is recoverable; that is not.
+  @@unique([appointmentId, ruleId])
+  /// Drives the job query and keeps it fast once SENT rows pile up.
+  @@index([status, scheduledFor])
+  @@index([organizationId, createdAt])
+  @@map("notification")
+}
+
+/// One-shot opaque token behind the confirm / cancel link.
+/// The appointment id never travels in a URL: it would let anyone iterate ids
+/// and cancel other people's appointments.
+model AppointmentActionToken {
+  id            String @id @default(uuid())
+  appointmentId String @map("appointment_id")
+
+  token     String     @unique
+  action    ActionKind
+  expiresAt DateTime   @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?  @map("used_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@map("appointment_action_token")
+}
