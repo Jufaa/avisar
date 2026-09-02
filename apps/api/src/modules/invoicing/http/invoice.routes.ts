@@ -9,6 +9,7 @@ import { invoiceProvider } from '../infrastructure/providers/index.js';
 import { draftInvoice } from '../application/draft-invoice.js';
 import { issueInvoice } from '../application/issue-invoice.js';
 import { isValidCuit } from '../domain/invoice-rules.js';
+import { parseInvoiceRequest } from '../domain/parse-invoice-request.js';
 
 const profileBody = z.object({
   taxId: z.string().trim().min(11, 'Enter the CUIT'),
@@ -42,6 +43,10 @@ const draftBody = z.object({
   issuedOn: z.string().trim().optional(),
   patientId: z.string().uuid().nullish(),
   appointmentId: z.string().uuid().nullish(),
+});
+
+const parseBody = z.object({
+  text: z.string().trim().min(3, 'Escribí qué querés facturar').max(500),
 });
 
 const listQuery = z.object({
@@ -116,6 +121,19 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
     const found = await repository.findById(organizationId, request.params.id);
     if (!found) throw new NotFoundError('Invoice');
     return found;
+  });
+
+  /**
+   * Reads a sentence and fills in what it can.
+   *
+   * It creates nothing and stores nothing: the answer goes into the form, and
+   * a person still confirms it. Living behind an endpoint rather than in the
+   * browser is what lets a model replace the parser later without the client
+   * noticing.
+   */
+  app.post('/invoices/parse', async (request) => {
+    const body = parseBody.parse(request.body);
+    return parseInvoiceRequest(body.text);
   });
 
   /** Builds and stores a draft. Nothing fiscal happens here. */

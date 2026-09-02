@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState, InfoNotice, InvoiceBadge, Loading } from '../../components/ui/Feedback';
 import { BillingProfileForm } from './BillingProfileForm';
 import { InvoiceSheet } from './InvoiceSheet';
+import { Sheet } from '../../components/ui/Sheet';
 import { formatMoney } from '../../lib/format';
 
 export function InvoicesPage() {
@@ -19,6 +20,7 @@ export function InvoicesPage() {
   const profile = useBillingProfile();
   const invoices = useInvoices();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   if (profile.isLoading || status.isLoading) return <Loading />;
 
@@ -52,9 +54,14 @@ export function InvoicesPage() {
           </p>
         </div>
 
-        <Button size="lg" onClick={() => setSheetOpen(true)}>
-          + Nueva factura
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="lg" onClick={() => setProfileOpen(true)}>
+            Datos fiscales
+          </Button>
+          <Button size="lg" onClick={() => setSheetOpen(true)}>
+            + Nueva factura
+          </Button>
+        </div>
       </header>
 
       {/* Said on the page itself, not buried in settings. Believing a
@@ -88,6 +95,15 @@ export function InvoicesPage() {
         profile={profile.data}
         onClose={() => setSheetOpen(false)}
       />
+
+      <Sheet
+        open={profileOpen}
+        title="Datos fiscales"
+        description="Cambiarlos no toca las facturas ya emitidas: cada una guarda los datos que tenía el día que se emitió."
+        onClose={() => setProfileOpen(false)}
+      >
+        <BillingProfileForm profile={profile.data} onSaved={() => setProfileOpen(false)} />
+      </Sheet>
     </div>
   );
 }

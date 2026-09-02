@@ -338,3 +338,24 @@ export function useInvoice(id: string) {
     enabled: id.length > 0,
   });
 }
+
+export interface ParsedInvoiceRequest {
+  receiverName: string | null;
+  description: string | null;
+  quantity: number | null;
+  unitPrice: number | null;
+  missing: string[];
+}
+
+/**
+ * Reads a sentence and fills in what it can. Creates nothing.
+ *
+ * Deliberately a server call even though today's parser is deterministic and
+ * could run here: the day it becomes a model, the client does not change.
+ */
+export function useParseInvoiceRequest() {
+  return useMutation({
+    mutationFn: (text: string) =>
+      api<ParsedInvoiceRequest>('/invoices/parse', { method: 'POST', body: { text } }),
+  });
+}

@@ -1,9 +1,14 @@
 import { useMemo, useState } from 'react';
 import type { BillingProfileDto, InvoiceDto } from '@avisar/shared';
-import { useDraftInvoice, useIssueInvoice, usePatients } from '../../lib/queries';
+import {
+  useDraftInvoice,
+  useIssueInvoice,
+  useParseInvoiceRequest,
+  usePatients,
+} from '../../lib/queries';
 import { ApiError } from '../../lib/api';
 import { Button } from '../../components/ui/Button';
-import { SelectField, TextField } from '../../components/ui/Field';
+import { SelectField, TextAreaField, TextField } from '../../components/ui/Field';
 import { Sheet } from '../../components/ui/Sheet';
 import { ErrorNotice, InfoNotice } from '../../components/ui/Feedback';
 import { formatMoney } from '../../lib/format';
@@ -16,6 +21,10 @@ interface LineDraft {
 }
 
 const EMPTY_LINE: LineDraft = { description: '', quantity: '1', unitPrice: '', vatRate: '21' };
+
+const FIELD_NAMES = (field: string): string =>
+  ({ receiverName: 'el nombre', description: 'el concepto', unitPrice: 'el importe' })[field] ??
+  field;
 
 /**
  * Two steps, never one.
@@ -48,6 +57,47 @@ export function InvoiceSheet({
   const [receiverAddress, setReceiverAddress] = useState('');
   const [lines, setLines] = useState<LineDraft[]>([{ ...EMPTY_LINE }]);
 
+  const parse = useParseInvoiceRequest();
+  const [sentence, setSentence] = useState('');
+  const [parsed, setParsed] = useState<string | null>(null);
+
+  /**
+   * Dictation and typing land in the same place: the form.
+   *
+   * Whatever the parser understands is written into the fields, visibly, where
+   * it can be corrected. It is never allowed to skip ahead to issuing — the
+   * person still presses "Revisar" and then "Confirmar".
+   */
+  function fillFromSentence() {
+    const text = sentence.trim();
+    if (text.length < 3) return;
+
+    setError(null);
+    parse.mutate(text, {
+      onSuccess: (result) => {
+        if (result.receiverName) setReceiverName(result.receiverName);
+        if (result.description || result.unitPrice !== null || result.quantity !== null) {
+          setLines([
+            {
+              description: result.description ?? '',
+              quantity: String(result.quantity ?? 1),
+              unitPrice: result.unitPrice !== null ? String(result.unitPrice) : '',
+              vatRate: '21',
+            },
+          ]);
+        }
+        // Named plainly rather than left for the user to notice: a field the
+        // parser could not fill is a field it did not invent.
+        setParsed(
+          result.missing.length > 0
+            ? `Completá a mano: ${result.missing.map(FIELD_NAMES).join(', ')}.`
+            : 'Listo, revisá que esté bien.',
+        );
+      },
+      onError: () => setError('No pudimos interpretar esa frase. Cargala a mano.'),
+    });
+  }
+
   // Shown live so nobody presses "Revisar" to find out what it costs. The API
   // recalculates it anyway — this is a preview, never the source of truth.
   const preview = useMemo(() => {
@@ -76,6 +126,8 @@ export function InvoiceSheet({
     setReceiverTaxCondition('CONSUMIDOR_FINAL');
     setReceiverAddress('');
     setLines([{ ...EMPTY_LINE }]);
+    setSentence('');
+    setParsed(null);
     setPending(null);
     setError(null);
   }
@@ -160,6 +212,30 @@ export function InvoiceSheet({
         <InvoiceReview invoice={pending} />
       ) : (
         <form onSubmit={review} className="flex flex-col gap-4">
+          {/* The shortcut, not the interface. It writes into the fields below
+              and stops there; a fiscal document still gets confirmed by hand. */}
+          <div className="flex flex-col gap-2 rounded-xl bg-brand-50 p-3">
+            <TextAreaField
+              label="Escribilo como lo dirías"
+              placeholder="Facturale a Juan Pérez 3 sesiones de kinesiología a 25 mil"
+              value={sentence}
+              onChange={(event) => setSentence(event.target.value)}
+              className="min-h-20"
+            />
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                loading={parse.isPending}
+                onClick={fillFromSentence}
+                disabled={sentence.trim().length < 3}
+              >
+                Completar formulario
+              </Button>
+              {parsed && <span className="text-sm text-ink-700">{parsed}</span>}
+            </div>
+          </div>
+
           <SelectField
             label="Condición del cliente"
             value={receiverTaxCondition}
