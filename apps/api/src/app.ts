@@ -1,7 +1,10 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import fastifyStatic from '@fastify/static';
 import jwt from '@fastify/jwt';
 import { env } from './config/env.js';
 import { registerErrorHandler } from './shared/http/error-handler.js';
@@ -14,6 +17,9 @@ import { appointmentRoutes } from './modules/appointments/http/appointment.route
 import { notificationRoutes } from './modules/notifications/http/notification.routes.js';
 import { invoiceRoutes } from './modules/invoicing/http/invoice.routes.js';
 import { publicRoutes } from './modules/public/http/public.routes.js';
+
+/** Where this file sits once compiled, so the web build can be found next to it. */
+const currentDir = dirname(fileURLToPath(import.meta.url));
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -69,7 +75,16 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(jwt, { secret: env.JWT_SECRET });
 
-  registerErrorHandler(app);
+  // Registered before the error handler, which needs `sendFile` to exist to
+  // hand an unknown path back to the browser router.
+  if (env.SERVE_WEB) {
+    await app.register(fastifyStatic, {
+      root: resolve(currentDir, '../../web/dist'),
+      wildcard: false,
+    });
+  }
+
+  registerErrorHandler(app, { serveWeb: env.SERVE_WEB });
 
   // Deliberately says nothing about how the service is configured. A health
   // check is read by load balancers, and by anyone who finds the URL.

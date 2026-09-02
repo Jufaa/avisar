@@ -7,7 +7,19 @@ import { AppError } from '../errors.js';
  * One place turns any thrown value into the response shape the web client
  * expects. Handlers just throw; they never build an error body.
  */
-export function registerErrorHandler(app: FastifyInstance): void {
+export interface ErrorHandlerOptions {
+  /**
+   * Whether this process also serves the web client.
+   *
+   * It changes what a miss means: with the client behind it, an unknown path
+   * is a route the browser router owns, not a mistake. Fastify allows exactly
+   * one not-found handler per instance, so the decision lives here rather than
+   * in a second registration that would throw at boot.
+   */
+  serveWeb?: boolean;
+}
+
+export function registerErrorHandler(app: FastifyInstance, options: ErrorHandlerOptions = {}): void {
   app.setErrorHandler((error: unknown, request: FastifyRequest, reply: FastifyReply) => {
     if (error instanceof ZodError) {
       return reply.status(400).send({
@@ -66,6 +78,13 @@ export function registerErrorHandler(app: FastifyInstance): void {
   });
 
   app.setNotFoundHandler((request: FastifyRequest, reply: FastifyReply) => {
+    // An unknown /api path is always a mistake and always answers JSON.
+    if (options.serveWeb && !request.url.startsWith('/api/')) {
+      // Everything else belongs to the browser router: /agenda, /facturas and
+      // the patient's /t/:token must survive a hard refresh.
+      return reply.sendFile('index.html');
+    }
+
     return reply.status(404).send({
       error: { code: 'NOT_FOUND', message: `Route ${request.method} ${request.url} does not exist` },
     });

@@ -1,0 +1,12 @@
+# Anything the image builds for itself, or must never travel into it.
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.env
+**/.env
+*.log
+coverage
+.claude
+.atl

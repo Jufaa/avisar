@@ -16,6 +16,18 @@ const schema = z
 
     WEB_APP_URL: z.string().url().default('http://localhost:5173'),
 
+    /**
+     * Whether this process also serves the built web client.
+     *
+     * Off in development, where Vite serves it with hot reload on its own
+     * port. On in production, where one container serving both is one less
+     * thing to keep in sync.
+     */
+    SERVE_WEB: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((value) => value === 'true'),
+
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
     JWT_EXPIRES_IN: z.string().default('30d'),
 
