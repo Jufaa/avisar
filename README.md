@@ -246,6 +246,50 @@ token viaja aparte, como parámetro del botón.
 
 ---
 
+## Base de datos en Neon
+
+El backend conserva Prisma y su conexión PostgreSQL. Para conectar un proyecto
+de Neon, ejecutar desde la raíz:
+
+```bash
+neon init -y --org-id <org-id> --project-id <project-id> --branch production --services postgres
+neon deploy
+```
+
+Si la instalación de dependencias solicita indicar la raíz del workspace:
+
+```bash
+pnpm add -w @neon/config @neon/env
+```
+
+El CLI guarda `DATABASE_URL`, `DATABASE_URL_UNPOOLED` y `NEON_BRANCH` en
+`.env.local`, o en `.env` si ya existe. La API carga primero las variables
+inyectadas por el entorno, luego `.env.local` y `.env` de la raíz, y finalmente
+los archivos equivalentes de `apps/api`. La configuración local restante se
+conserva. Para volver a PostgreSQL local, retirar las variables de conexión de
+Neon del archivo raíz o inyectar explícitamente las conexiones locales.
+
+`DATABASE_URL` utiliza el pool de Neon para las consultas de la aplicación.
+`DATABASE_URL_UNPOOLED` utiliza la conexión directa para migraciones; cuando
+falta, Prisma CLI conserva el uso de `DATABASE_URL` para PostgreSQL local.
+
+```bash
+pnpm --filter @avisar/api db:deploy
+npm run build
+pnpm dev
+```
+
+En Render, configurar ambas variables de conexión como variables de entorno.
+El contenedor aplica las migraciones antes de iniciar la API. Los archivos
+`.env`, `.env.local` y `.neon` quedan excluidos de la imagen y las credenciales
+no se guardan en Git. Las migraciones crean las tablas; los datos de la base
+local no se transfieren automáticamente.
+
+Los recordatorios actuales consultan la base cada minuto mientras el servidor
+está activo. Esto puede impedir la suspensión de Neon y consumir la cuota
+gratuita. La conexión a Neon no modifica ese comportamiento ni resuelve la
+ejecución de recordatorios cuando Render Free está suspendido.
+
 ## Comandos
 
 | Comando | Qué hace |

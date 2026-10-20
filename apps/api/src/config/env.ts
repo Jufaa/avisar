@@ -1,5 +1,7 @@
-import 'dotenv/config';
+import { loadEnvironment } from './load-env.js';
 import { z } from 'zod';
+
+loadEnvironment();
 
 /**
  * Every environment variable the API reads is declared here and nowhere else.

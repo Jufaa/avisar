@@ -61,6 +61,8 @@ COPY --from=build --chown=avisar:avisar /app/apps/api/package.json ./apps/api/pa
 COPY --from=build --chown=avisar:avisar /app/apps/api/dist ./apps/api/dist
 # The migrations travel with the image so the running container can apply them.
 COPY --from=build --chown=avisar:avisar /app/apps/api/prisma ./apps/api/prisma
+COPY --from=build --chown=avisar:avisar /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
+COPY --from=build --chown=avisar:avisar /app/apps/api/src/config/load-env.ts ./apps/api/src/config/load-env.ts
 
 # Built assets only — no sources, no Vite, no toolchain.
 COPY --from=build --chown=avisar:avisar /app/apps/web/dist ./apps/web/dist
