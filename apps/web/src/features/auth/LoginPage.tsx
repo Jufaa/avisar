@@ -94,6 +94,10 @@ export function AuthLayout({
         </div>
 
         <div className="rounded-3xl border border-line bg-surface p-6 shadow-sm">{children}</div>
+        <nav aria-label="Privacidad" className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-center text-sm text-ink-500">
+          <a href="/privacidad.html" className="underline">Política de privacidad</a>
+          <a href="/eliminar-datos.html" className="underline">Eliminación de datos</a>
+        </nav>
       </div>
     </div>
   );

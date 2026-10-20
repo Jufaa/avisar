@@ -10,6 +10,16 @@ Agenda de turnos para consultorios, construida alrededor de un solo trabajo:
 
 ---
 
+## Páginas públicas de privacidad
+
+- `/privacidad.html`: política de privacidad; usar en el campo de Meta «URL de la Política de privacidad».
+- `/eliminar-datos.html`: instrucciones de solicitud por correo; usar como «URL de las instrucciones para la eliminación de datos», no como callback automático.
+
+Son documentos HTML públicos, sin inicio de sesión ni JavaScript, copiados por Vite al build y servidos por el mismo backend en producción. También están enlazados desde las pantallas de acceso y registro.
+Las solicitudes se reciben y gestionan manualmente mediante el contacto indicado en ambas páginas. Actualizar el texto si cambian el responsable, los proveedores o el tratamiento de datos. Publicar estos enlaces no garantiza la aprobación de Meta ni reemplaza otros requisitos de la cuenta.
+
+---
+
 ## Poner el proyecto en marcha
 
 Requisitos: Node 20+, pnpm 9+, y PostgreSQL (por Docker o local).
