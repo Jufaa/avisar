@@ -254,8 +254,9 @@ export function OnboardingWizard() {
 
             {provider.data && !provider.data.live && (
               <InfoNotice>
-                Estás en modo de prueba: los mensajes todavía no llegan al paciente. Cuando conectes
-                WhatsApp, empiezan a salir solos.
+                {provider.data.name === 'unavailable'
+                  ? 'El servicio de recordatorios de WhatsApp no está disponible por el momento. El turno quedó guardado; avisa al paciente por otro medio.'
+                  : 'Estás en modo de prueba: los recordatorios se simulan y no llegan al paciente.'}
               </InfoNotice>
             )}
 

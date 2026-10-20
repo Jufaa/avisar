@@ -66,6 +66,12 @@ export function BillingProfileForm({
     <form onSubmit={submit} className="flex flex-col gap-4">
       {error && <ErrorNotice message={error} />}
 
+      <p className="text-sm text-ink-600">
+        Hay dos formas de organizarlo: en modo individual cada profesional usa su espacio y su CUIT;
+        en modo consultorio, todas las agendas comparten este único CUIT emisor. Elegí el modo en
+        Recordatorios, en la sección «Tu cuenta».
+      </p>
+
       <TextField
         label="CUIT"
         inputMode="numeric"

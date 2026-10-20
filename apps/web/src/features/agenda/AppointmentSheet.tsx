@@ -11,7 +11,7 @@ import {
 import { Button } from '../../components/ui/Button';
 import { SelectField, TextAreaField, TextField } from '../../components/ui/Field';
 import { Sheet } from '../../components/ui/Sheet';
-import { ErrorNotice, NotificationBadge } from '../../components/ui/Feedback';
+import { ErrorNotice } from '../../components/ui/Feedback';
 import { formatFull, toDateTimeLocalValue } from '../../lib/format';
 import { useDebounced } from '../../lib/useDebounced';
 import { useIsSolo } from '../../lib/useAccountMode';
@@ -123,7 +123,7 @@ export function AppointmentSheet({
     if (!startsAt) return null;
 
     const enabled = (rules.data ?? []).filter((rule) => rule.enabled);
-    if (enabled.length === 0) return 'No tenés ningún aviso configurado, así que este turno no lleva recordatorio.';
+    if (enabled.length === 0) return 'Este turno no tendrá recordatorio automático. Avisa al paciente por otro medio.';
 
     const soonest = Math.min(...enabled.map((rule) => rule.hoursBefore));
     const when = new Date(startsAt).getTime();
@@ -342,17 +342,6 @@ export function AppointmentSheet({
           </p>
         )}
 
-        {editing && appointment!.reminders.length > 0 && (
-          <div className="flex flex-col gap-2 rounded-2xl border border-line bg-ground p-4">
-            <p className="text-sm font-semibold text-ink-700">Recordatorios</p>
-            {appointment!.reminders.map((reminder) => (
-              <div key={reminder.id} className="flex items-center justify-between gap-3">
-                <span className="text-sm text-ink-500">{formatFull(reminder.scheduledFor)}</span>
-                <NotificationBadge status={reminder.status} />
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </Sheet>
   );

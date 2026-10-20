@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from '@prisma/client';
 import type { MessageTemplateDto, NotificationLogDto, ReminderRuleDto } from '@avisar/shared';
 import { formatPhoneForDisplay } from '../../../shared/phone.js';
 import { NotFoundError } from '../../../shared/errors.js';
+import { shouldApplyDelivery, type DeliveryEvent } from '../domain/delivery-status.js';
 import type {
   ActiveRule,
   DueReminder,
@@ -175,6 +176,30 @@ export class PrismaNotificationRepository implements NotificationRepository {
     });
   }
 
+  async applyDeliveryEvent(event: DeliveryEvent): Promise<boolean> {
+    const current = await this.prisma.notification.findUnique({
+      where: { providerMessageId: event.providerMessageId },
+      select: { id: true, deliveryStatus: true },
+    });
+
+    if (!current) return false;
+
+    // A replayed or out-of-order webhook must not undo better news we already
+    // hold: a `delivered` arriving after a `read` is a duplicate, not a change.
+    if (!shouldApplyDelivery(current.deliveryStatus, event.status)) return false;
+
+    await this.prisma.notification.update({
+      where: { id: current.id },
+      data: {
+        deliveryStatus: event.status,
+        deliveredAt: event.status === 'UNDELIVERED' ? null : event.at,
+        deliveryError: event.error ? event.error.slice(0, 500) : null,
+      },
+    });
+
+    return true;
+  }
+
   async listLog(
     organizationId: string,
     options: { limit: number; offset: number },
@@ -200,6 +225,9 @@ export class PrismaNotificationRepository implements NotificationRepository {
         status: row.status,
         attempts: row.attempts,
         error: row.error,
+        deliveryStatus: row.deliveryStatus,
+        deliveredAt: row.deliveredAt?.toISOString() ?? null,
+        deliveryError: row.deliveryError,
         renderedBody: row.renderedBody,
         toPhone: formatPhoneForDisplay(row.toPhone),
         patientName: row.appointment.patient.fullName,

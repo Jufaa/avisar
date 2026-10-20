@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/Button';
 import { EmptyState, InfoNotice, InvoiceBadge, Loading } from '../../components/ui/Feedback';
 import { BillingProfileForm } from './BillingProfileForm';
 import { InvoiceSheet } from './InvoiceSheet';
+import { InvoiceProviderConnection } from './InvoiceProviderConnection';
 import { Sheet } from '../../components/ui/Sheet';
 import { formatMoney } from '../../lib/format';
 
@@ -64,13 +65,12 @@ export function InvoicesPage() {
         </div>
       </header>
 
-      {/* Said on the page itself, not buried in settings. Believing a
-          simulated CAE was a real invoice is the worst outcome here. */}
+      <InvoiceProviderConnection />
+
+      {/* Said on the page itself, not buried in settings. */}
       {status.data && !status.data.live && (
         <InfoNotice>
-          <strong className="font-semibold">Modo de prueba.</strong> Se simula el CAE y{' '}
-          <strong className="font-semibold">no se emite ninguna factura real</strong>. Sirve para
-          probar todo el circuito sin costo.
+          <strong className="font-semibold">{status.data.description}</strong>
         </InfoNotice>
       )}
 

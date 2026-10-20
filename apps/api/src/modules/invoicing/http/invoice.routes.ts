@@ -3,9 +3,12 @@ import { z } from 'zod';
 import type { InvoicingStatusDto } from '@avisar/shared';
 import { prisma } from '../../../shared/prisma.js';
 import { authOf, requireAuth } from '../../../shared/http/auth.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors.js';
+import { ConflictError, NotFoundError, ValidationError } from '../../../shared/errors.js';
 import { PrismaInvoiceRepository } from '../infrastructure/prisma-invoice.repository.js';
-import { invoiceProvider } from '../infrastructure/providers/index.js';
+import { invoiceProviderForOrganization } from '../infrastructure/providers/index.js';
+import { env } from '../../../config/env.js';
+import { encryptProviderCredential, decryptProviderCredential } from '../infrastructure/credential-encryption.js';
+import { PrismaInvoicingConnectionRepository } from '../infrastructure/prisma-invoicing-connection.repository.js';
 import { draftInvoice } from '../application/draft-invoice.js';
 import { issueInvoice } from '../application/issue-invoice.js';
 import { isValidCuit } from '../domain/invoice-rules.js';
@@ -19,6 +22,11 @@ const profileBody = z.object({
   address: z.string().trim().max(255).nullish(),
   grossIncomeId: z.string().trim().nullish(),
   activityStartedOn: z.string().trim().nullish(),
+});
+
+const connectionBody = z.object({
+  apiKey: z.string().trim().min(1).max(512).optional(),
+  environment: z.enum(['homologacion', 'produccion']),
 });
 
 const lineBody = z.object({
@@ -57,6 +65,7 @@ const listQuery = z.object({
 
 export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
   const repository = new PrismaInvoiceRepository(prisma);
+  const connectionRepository = new PrismaInvoicingConnectionRepository(prisma);
 
   app.addHook('preHandler', requireAuth);
 
@@ -64,21 +73,85 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/invoicing/status', async (request) => {
     const { organizationId } = authOf(request);
-    const provider = invoiceProvider();
+    const savedConnection = await connectionRepository.find(organizationId);
+    const connection = usableConnection(savedConnection, organizationId);
+    const provider = invoiceProviderForOrganization(organizationId, connection);
     const profile = await repository.findProfile(organizationId);
+    const configured = profile !== null && provider.name !== 'unavailable'
+      && (provider.name !== 'arca_api' || connection !== null);
 
     const status: InvoicingStatusDto = {
       provider: provider.name,
       live: provider.live,
-      configured: profile !== null,
+      configured,
       // Said plainly, on every screen. Believing a simulation was a real
       // invoice is the worst thing this module could let happen.
-      description: provider.live
-        ? 'Las facturas se emiten en ARCA y tienen validez fiscal.'
-        : 'Modo de prueba: se simula el CAE y NO se emite ninguna factura real.',
+      description:
+        provider.name === 'unavailable'
+          ? 'La facturación está disponible, pero falta configurar un proveedor real para emitir comprobantes.'
+          : provider.name === 'arca_api' && provider.live
+          ? 'Las facturas se emiten en ARCA y tienen validez fiscal.'
+          : provider.name === 'arca_api'
+            ? 'Modo de homologación: las facturas son de prueba y NO tienen validez fiscal.'
+            : provider.live
+              ? 'Las facturas se emiten en ARCA y tienen validez fiscal.'
+              : 'Modo de prueba: se simula el CAE y NO se emite ninguna factura real.',
     };
 
     return status;
+  });
+
+  // --- customer-owned provider connection ---------------------------------
+
+  app.get('/invoicing/connection', async (request) => {
+    const { organizationId } = authOf(request);
+    const saved = await connectionRepository.find(organizationId);
+    const connection = usableConnection(saved, organizationId);
+
+    return {
+      available: env.INVOICING_PROVIDER === 'arca_api',
+      configured: connection !== null,
+      reconnectRequired: saved !== null && connection === null,
+      environment: saved?.environment ?? 'homologacion',
+    };
+  });
+
+  app.put('/invoicing/connection', async (request) => {
+    const { organizationId } = authOf(request);
+    if (env.INVOICING_PROVIDER !== 'arca_api') {
+      throw new ConflictError('La conexión con ARCA {API} no está habilitada en esta instalación.');
+    }
+
+    const body = connectionBody.parse(request.body);
+    const existing = await connectionRepository.find(organizationId);
+    if (!body.apiKey && !existing) {
+      throw new ValidationError('Pegá la API key de tu cuenta para conectarla.');
+    }
+
+    if (
+      !body.apiKey &&
+      existing &&
+      !usableConnection(existing, organizationId)
+    ) {
+      throw new ValidationError('La conexión guardada no se puede leer. Pegá nuevamente tu API key.');
+    }
+
+    const encryptedApiKey = body.apiKey
+      ? encryptProviderCredential(
+          body.apiKey,
+          organizationId,
+          env.INVOICING_CREDENTIAL_ENCRYPTION_KEY!,
+        )
+      : existing!.encryptedApiKey;
+
+    await connectionRepository.save(organizationId, encryptedApiKey, body.environment);
+    return { configured: true, environment: body.environment };
+  });
+
+  app.delete('/invoicing/connection', async (request) => {
+    const { organizationId } = authOf(request);
+    await connectionRepository.delete(organizationId);
+    return { configured: false };
   });
 
   // --- tax details ---------------------------------------------------------
@@ -161,10 +234,12 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
    */
   app.post<{ Params: { id: string } }>('/invoices/:id/issue', async (request) => {
     const { organizationId } = authOf(request);
+    const savedConnection = await connectionRepository.find(organizationId);
+    const connection = usableConnection(savedConnection, organizationId);
 
     return issueInvoice(organizationId, request.params.id, {
       repository,
-      provider: invoiceProvider(),
+      provider: invoiceProviderForOrganization(organizationId, connection),
     });
   });
 
@@ -182,4 +257,21 @@ export async function invoiceRoutes(app: FastifyInstance): Promise<void> {
     await repository.deleteDraft(organizationId, request.params.id);
     return reply.status(204).send();
   });
+}
+
+function usableConnection(
+  connection: Awaited<ReturnType<PrismaInvoicingConnectionRepository['find']>>,
+  organizationId: string,
+) {
+  if (!connection || env.INVOICING_PROVIDER !== 'arca_api') return null;
+  try {
+    decryptProviderCredential(
+      connection.encryptedApiKey,
+      organizationId,
+      env.INVOICING_CREDENTIAL_ENCRYPTION_KEY!,
+    );
+    return connection;
+  } catch {
+    return null;
+  }
 }

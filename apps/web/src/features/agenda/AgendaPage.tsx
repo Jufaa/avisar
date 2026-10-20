@@ -100,8 +100,17 @@ export function AgendaPage() {
 
       {provider.data && !provider.data.live && (
         <InfoNotice>
-          <strong className="font-semibold">Modo de prueba.</strong> Los recordatorios se programan
-          normalmente, pero todavía no llegan al paciente.
+          {provider.data.name === 'unavailable' ? (
+            <>
+              <strong className="font-semibold">Recordatorios no disponibles.</strong> Los turnos se
+              guardan, pero el servicio de WhatsApp no puede enviar recordatorios por el momento.
+            </>
+          ) : (
+            <>
+              <strong className="font-semibold">Modo de prueba.</strong> Los recordatorios se programan
+              normalmente, pero todavía no llegan al paciente.
+            </>
+          )}
         </InfoNotice>
       )}
 

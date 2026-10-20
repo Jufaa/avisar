@@ -1,4 +1,5 @@
 import type { MessageTemplateDto, NotificationLogDto, ReminderRuleDto } from '@avisar/shared';
+import type { DeliveryEvent } from './delivery-status.js';
 
 export interface ActiveRule {
   id: string;
@@ -56,6 +57,16 @@ export interface NotificationRepository {
   markSent(id: string, providerMessageId: string, renderedBody: string): Promise<void>;
   markFailed(id: string, error: string, giveUp: boolean): Promise<void>;
   markCancelled(id: string, reason: string): Promise<void>;
+
+  /**
+   * Records what the provider reported about a message we already sent.
+   *
+   * Resolved by provider message id, not by our own id, because the webhook
+   * only knows theirs. Returns whether a row actually changed: Meta retries
+   * deliveries we already processed, and an unmatched id is normal the first
+   * time we deploy this against an account with history.
+   */
+  applyDeliveryEvent(event: DeliveryEvent): Promise<boolean>;
 
   listLog(
     organizationId: string,

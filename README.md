@@ -127,50 +127,57 @@ Confirmá o cancelá acá: {{5}}
 
 Una vez aprobada, copiá su SID (`HX...`) a `TWILIO_CONTENT_SID`.
 
-> El texto editable dentro de la app sigue sirviendo: es lo que se ve en el log,
-> en la vista previa y lo que manda el proveedor de consola. Meta solo restringe
-> el mensaje real.
+> Las plantillas se administran de forma centralizada en el proveedor. Los
+> profesionales gestionan sus turnos y consultan la respuesta en la agenda.
 
 ---
 
-## Opción recomendada: Meta Cloud API (directo, gratis)
+## WhatsApp: un número central de Avisar
 
-Twilio es un revendedor y su cuenta trial **bloquea las plantillas de WhatsApp**,
-así que no se puede enviar nada desde la API hasta pagar. Meta directo es más
-barato y, para desarrollar, más fácil.
+Avisar envía los recordatorios de todos los profesionales desde un único número.
+El profesional carga el paciente, su teléfono y el turno; la aplicación programa
+el recordatorio. El paciente abre el enlace recibido y confirma o cancela.
+La agenda actualiza el estado automáticamente mientras está abierta.
 
-El setup para desarrolladores da, sin tarjeta:
+Los profesionales no conectan cuentas de Meta ni editan o prueban mensajes desde
+la aplicación. **Cuenta** conserva las opciones individual y consultorio.
+La plantilla, las credenciales y la facturación del envío pertenecen a Avisar.
 
-- Un número de prueba propio
-- Hasta 5 números destinatarios verificados con un código
-- La plantilla `hello_world` ya aprobada
-- Plantillas propias, creadas y aprobadas gratis sobre ese número
+La regla inicial envía el recordatorio 24 horas antes. Las reservas realizadas
+después de ese momento no generan un aviso retroactivo; la pantalla del turno
+informa cuando no hay un recordatorio programado. Los pacientes deben tener
+habilitada la recepción de recordatorios.
 
-### Pasos
+En **Cuenta → Recordatorios** se pueden agregar avisos, cambiar su anticipación
+en horas o días y quitarlos. Cada horario distinto genera un aviso: por ejemplo,
+2 días, 1 día y 2 horas antes son tres recordatorios. La anticipación admitida es
+de 1 hora a 14 días. Los cambios afectan a los turnos nuevos; no se recalculan los
+avisos de turnos ya agendados. Quitar un horario lo desactiva para nuevos turnos,
+conservando los mensajes programados y el historial de los anteriores.
 
-1. Creá una app en <https://developers.facebook.com> y agregale el producto **WhatsApp**.
-2. En **WhatsApp → API Setup** vas a encontrar:
-   - **Phone number ID** (numérico) → `META_PHONE_NUMBER_ID`
-   - **Temporary access token** (dura 24 h) → `META_ACCESS_TOKEN`
-3. En esa misma pantalla, agregá tu celular como destinatario y verificalo con
-   el código que te llega.
-4. En `apps/api/.env`:
+### Obtener los datos de configuración
 
-```env
-NOTIFICATION_PROVIDER=meta
-META_PHONE_NUMBER_ID=123456789012345
-META_ACCESS_TOKEN=EAAG...
-META_TEMPLATE_NAME=hello_world
-META_TEMPLATE_LANGUAGE=en_US
-META_TEMPLATE_PARAM_COUNT=0
-```
+La persona que administra Avisar configura estos valores en el servidor:
 
-5. Reiniciá el backend y probá desde **Recordatorios → Probalo con tu número**.
+| Variable en `apps/api/.env` | Cómo obtenerla |
+| --- | --- |
+| `NOTIFICATION_PROVIDER` | Usar `meta` para el servicio central o `console` para pruebas locales sin mensajes reales. |
+| `META_PHONE_NUMBER_ID` | [Meta for Developers](https://developers.facebook.com/apps/) → WhatsApp → configuración de la API → identificador del número central. |
+| `META_ACCESS_TOKEN` | Token autorizado para enviar desde ese número, guardado únicamente en el servidor. |
+| `META_APP_SECRET` | Configuración de la app de Meta → Básica → secreto de la app. Valida las notificaciones recibidas de Meta. |
+| `META_WEBHOOK_VERIFY_TOKEN` | Generar un valor aleatorio local y usar el mismo en la configuración del webhook de Meta. |
+| `WEB_APP_URL` | URL pública HTTPS donde el paciente abrirá la confirmación del turno. |
+| `META_TEMPLATE_*` | Nombre, idioma y estructura de parámetros de la plantilla aprobada del número central. |
 
-Eso ya te pone un WhatsApp real en el teléfono. Es feo — dice "Hello World" —
-pero prueba que todo el circuito funciona de punta a punta.
+Configurar el webhook en `<URL_HTTPS_API>/api/webhooks/meta` y reiniciar la API
+después de completar las variables. Si la configuración central está incompleta,
+el proveedor queda **no disponible** y bloquea los envíos. No usa credenciales
+guardadas por una organización como alternativa.
 
-### Después, tu plantilla de verdad
+La respuesta se registra al pulsar **Sí/No** en la página del enlace. El sistema
+no interpreta mensajes libres escritos en el chat de WhatsApp.
+
+### Plantilla de recordatorio
 
 En **WhatsApp Manager → Plantillas de mensajes** (business.facebook.com/wa/manage/message-templates),
 creá una con categoría **Servicio** — así llama Meta en español a la que su
@@ -273,6 +280,15 @@ tenga validez legal debería salir de un solo clic.
 
 ### Modo simulado vs. real
 
+**Facturas está disponible por defecto para todas las cuentas.** Cada usuario
+configura el CUIT emisor desde la aplicación, sin solicitar una activación
+manual. `INVOICING_ENABLED` solo es necesario si se quiere deshabilitar
+explícitamente el módulo en un despliegue.
+
+En producción, omitir la configuración no impide iniciar la aplicación: la
+facturación queda disponible y la emisión bloqueada hasta configurar un proveedor
+real. El proveedor simulado solo emite comprobantes de prueba fuera de producción.
+
 | Variable | Valor | Qué pasa |
 |---|---|---|
 | `INVOICING_PROVIDER` | `fake` (por defecto) | Se simula el CAE. **No se emite nada real.** Sirve para construir y probar todo el circuito. |
@@ -326,7 +342,7 @@ Por eso se puede cambiar Twilio o Prisma sin tocar un caso de uso.
 - Profesionales como fichas de agenda, sin login propio
 - Turnos con detección de superposición (avisa, no bloquea)
 - Agenda diaria y semanal, mobile-first
-- Recordatorios automáticos con reglas configurables y plantilla editable
+- Recordatorios automáticos desde el número central de Avisar y respuesta del paciente visible en la agenda
 - Link de confirmar/cancelar para el paciente, con token de un solo uso
 - Log de mensajes enviados, fallidos y no enviados
 

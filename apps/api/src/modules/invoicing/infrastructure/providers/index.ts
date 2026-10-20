@@ -1,10 +1,28 @@
 import { env } from '../../../../config/env.js';
 import { prisma } from '../../../../shared/prisma.js';
 import type { InvoiceProvider } from '../../domain/invoice-provider.js';
+import type {
+  InvoiceEnvironment,
+  InvoicingConnection,
+} from '../../domain/invoicing-connection.repository.js';
+import { decryptProviderCredential } from '../credential-encryption.js';
+import { ArcaApiInvoiceProvider } from './arca-api.provider.js';
 import { FakeInvoiceProvider } from './fake.provider.js';
 import { TusFacturasInvoiceProvider } from './tusfacturas.provider.js';
 
 let instance: InvoiceProvider | null = null;
+
+const unavailableProvider: InvoiceProvider = {
+  name: 'unavailable',
+  live: false,
+  async issue() {
+    return {
+      ok: false,
+      error: 'Configura un proveedor de facturación real antes de emitir comprobantes.',
+      retryable: false,
+    };
+  },
+};
 
 /**
  * The single place the concrete invoicing provider is chosen.
@@ -13,7 +31,18 @@ let instance: InvoiceProvider | null = null;
  * ARCA is one environment variable, and nothing above this file changes. It
  * is the same trade the notification providers make, for the same reason.
  */
-export function invoiceProvider(): InvoiceProvider {
+export function invoiceProvider(
+  apiKey: string | null = null,
+  environment: InvoiceEnvironment = 'homologacion',
+): InvoiceProvider {
+  if (env.NODE_ENV === 'production' && env.INVOICING_PROVIDER === 'fake') {
+    return unavailableProvider;
+  }
+
+  if (env.INVOICING_PROVIDER === 'arca_api') {
+    return new ArcaApiInvoiceProvider({ apiKey, environment });
+  }
+
   if (instance) return instance;
 
   switch (env.INVOICING_PROVIDER) {
@@ -31,6 +60,23 @@ export function invoiceProvider(): InvoiceProvider {
   }
 
   return instance;
+}
+
+/** Resolve the provider using only the authenticated organization's credential. */
+export function invoiceProviderForOrganization(
+  organizationId: string,
+  connection: InvoicingConnection | null,
+): InvoiceProvider {
+  if (env.INVOICING_PROVIDER !== 'arca_api') return invoiceProvider();
+  if (!connection) return invoiceProvider(null);
+
+  const apiKey = decryptProviderCredential(
+    connection.encryptedApiKey,
+    organizationId,
+    env.INVOICING_CREDENTIAL_ENCRYPTION_KEY!,
+  );
+
+  return invoiceProvider(apiKey, connection.environment);
 }
 
 /**

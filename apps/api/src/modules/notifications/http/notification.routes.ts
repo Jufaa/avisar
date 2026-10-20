@@ -1,12 +1,11 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { env } from '../../../config/env.js';
 import { prisma } from '../../../shared/prisma.js';
 import { authOf, requireAuth } from '../../../shared/http/auth.js';
-import { NotFoundError, ValidationError } from '../../../shared/errors.js';
+import { AppError, ValidationError } from '../../../shared/errors.js';
 import { PrismaNotificationRepository } from '../infrastructure/prisma-notification.repository.js';
-import { PrismaOrganizationRepository } from '../../organizations/infrastructure/prisma-organization.repository.js';
 import { notificationProvider } from '../infrastructure/providers/index.js';
-import { sendTestMessage } from '../application/send-test-message.js';
 import { unknownVariables } from '../domain/render-template.js';
 
 const logQuery = z.object({
@@ -31,14 +30,13 @@ const updateTemplateBody = z.object({
   body: z.string().trim().min(10, 'The message is too short').max(1500).optional(),
 });
 
-const testBody = z.object({
-  phone: z.string().trim().min(6, 'Enter a WhatsApp number'),
-  templateBody: z.string().trim().min(1).optional(),
-});
+function rejectSenderManagement(): never {
+  throw new AppError(403, 'CENTRAL_WHATSAPP_MANAGED',
+    'Avisar gestiona el envío de recordatorios. No es necesario conectar un número ni enviar mensajes de prueba.');
+}
 
 export async function notificationRoutes(app: FastifyInstance): Promise<void> {
   const repository = new PrismaNotificationRepository(prisma);
-  const organizations = new PrismaOrganizationRepository(prisma);
 
   app.addHook('preHandler', requireAuth);
 
@@ -49,14 +47,37 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
     return {
       name: provider.name,
       live: provider.live,
+      messageTemplate:
+        provider.name === 'meta' && env.META_TEMPLATE_NAME
+          ? { name: env.META_TEMPLATE_NAME, language: env.META_TEMPLATE_LANGUAGE }
+          : provider.name === 'twilio' && env.TWILIO_CONTENT_SID
+            ? { name: env.TWILIO_CONTENT_SID, language: null }
+            : null,
+      whatsapp: {
+        connected: provider.live,
+        displayPhoneNumber: null,
+        signupAvailable: false,
+      },
       // Surfaced in settings so the user always knows whether messages are
       // actually leaving the building.
       description:
-        provider.live
+        provider.name === 'unavailable'
+          ? 'El servicio de WhatsApp de Avisar está pendiente de configuración.'
+          : provider.live
           ? 'Los mensajes se envían por WhatsApp.'
           : 'Modo de prueba: los mensajes se muestran en el servidor y no llegan al paciente.',
     };
   });
+
+  app.post('/notifications/whatsapp/signup', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async () => rejectSenderManagement());
+
+  app.post('/notifications/whatsapp/complete', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async () => rejectSenderManagement());
+
+  app.delete('/notifications/whatsapp/connection', async () => rejectSenderManagement());
 
   // --- log -----------------------------------------------------------------
 
@@ -124,29 +145,5 @@ export async function notificationRoutes(app: FastifyInstance): Promise<void> {
 
   // --- test message --------------------------------------------------------
 
-  app.post('/notifications/test', async (request) => {
-    const { organizationId, sub } = authOf(request);
-    const body = testBody.parse(request.body);
-
-    const account = await organizations.findAccount(sub);
-    if (!account) throw new NotFoundError('Account');
-
-    let templateBody = body.templateBody;
-    if (!templateBody) {
-      const templates = await repository.listTemplates(organizationId);
-      templateBody = templates.find((template) => template.kind === 'REMINDER')?.body;
-      if (!templateBody) throw new NotFoundError('Reminder template');
-    }
-
-    return sendTestMessage(
-      {
-        phone: body.phone,
-        templateBody,
-        organizationName: account.organization.name,
-        timezone: account.organization.timezone,
-        userName: account.fullName,
-      },
-      notificationProvider(),
-    );
-  });
+  app.post('/notifications/test', async () => rejectSenderManagement());
 }

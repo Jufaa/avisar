@@ -97,6 +97,8 @@ export function useAppointments(from: Date, to: Date, professionalId?: string) {
     queryKey: ['appointments', params.toString()],
     queryFn: () => api<AppointmentDto[]>(`/appointments?${params.toString()}`),
     placeholderData: (previous) => previous,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -156,6 +158,12 @@ export interface ProviderStatus {
   name: string;
   live: boolean;
   description: string;
+  messageTemplate?: { name: string; language: string | null } | null;
+  whatsapp?: {
+    connected: boolean;
+    displayPhoneNumber: string | null;
+    signupAvailable: boolean;
+  };
 }
 
 export function useProviderStatus() {
@@ -163,6 +171,35 @@ export function useProviderStatus() {
     queryKey: ['provider'],
     queryFn: () => api<ProviderStatus>('/notifications/provider'),
     staleTime: 10 * 60_000,
+  });
+}
+
+export function useStartWhatsAppSignup() {
+  return useMutation({
+    mutationFn: () =>
+      api<{ state: string; appId: string; configId: string; graphVersion?: string }>(
+        '/notifications/whatsapp/signup',
+        { method: 'POST' },
+      ),
+  });
+}
+
+export function useCompleteWhatsAppSignup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { state: string; code: string; wabaId: string; phoneNumberId: string }) =>
+      api<void>('/notifications/whatsapp/complete', { method: 'POST', body: input }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['provider'] }),
+  });
+}
+
+export function useDisconnectWhatsApp() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api<void>('/notifications/whatsapp/connection', { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['provider'] }),
   });
 }
 
@@ -280,6 +317,50 @@ export function useSaveBillingProfile() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['billing-profile'] });
       // The status endpoint reports whether the practice is set up at all.
+      void queryClient.invalidateQueries({ queryKey: ['invoicing-status'] });
+    },
+  });
+}
+
+export type InvoiceEnvironment = 'homologacion' | 'produccion';
+
+export interface InvoicingConnectionDto {
+  available: boolean;
+  configured: boolean;
+  reconnectRequired: boolean;
+  environment: InvoiceEnvironment;
+}
+
+export function useInvoicingConnection() {
+  return useQuery({
+    queryKey: ['invoicing-connection'],
+    queryFn: () => api<InvoicingConnectionDto>('/invoicing/connection'),
+  });
+}
+
+export function useSaveInvoicingConnection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { apiKey?: string; environment: InvoiceEnvironment }) =>
+      api<Pick<InvoicingConnectionDto, 'configured' | 'environment'>>('/invoicing/connection', {
+        method: 'PUT',
+        body: input,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['invoicing-connection'] });
+      void queryClient.invalidateQueries({ queryKey: ['invoicing-status'] });
+    },
+  });
+}
+
+export function useDisconnectInvoicingConnection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api<{ configured: false }>('/invoicing/connection', { method: 'DELETE' }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['invoicing-connection'] });
       void queryClient.invalidateQueries({ queryKey: ['invoicing-status'] });
     },
   });

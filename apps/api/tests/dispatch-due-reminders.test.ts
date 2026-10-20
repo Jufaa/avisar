@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { dispatchDueReminders } from '../src/modules/notifications/application/dispatch-due-reminders.js';
 import { scheduleAppointmentReminders } from '../src/modules/notifications/application/schedule-appointment-reminders.js';
 import { FakeNotificationProvider } from '../src/modules/notifications/infrastructure/providers/fake.provider.js';
@@ -206,6 +206,33 @@ describe('dispatchDueReminders', () => {
     expect(message.body).toContain('14:30');
     expect(message.body).toContain('https://avisar.app/t/token-appointment-1');
     expect(message.body).not.toContain('{');
+  });
+
+  it('keeps each organization and confirmation link separate with one shared sender', async () => {
+    const templateBody = '{nombre_paciente} / {profesional} / {consultorio} / {hora} / {link}';
+    repository.due = [
+      reminder({ templateBody }),
+      reminder({
+        id: 'notification-2', organizationId: 'org-2', appointmentId: 'appointment-2',
+        patientName: 'Ana López', professionalName: 'Laura Ruiz', organizationName: 'Consultorio Norte',
+        toPhone: '+5491155556666', timezone: 'Europe/Madrid', templateBody,
+      }),
+    ];
+    const markSent = vi.spyOn(repository, 'markSent');
+    const summary = await run();
+    expect(summary).toMatchObject({ sent: 2, failed: 0 });
+    expect(provider.sent[0]).toMatchObject({
+      to: '+5491144445555', reference: 'notification-1', buttonParameter: 'token-appointment-1',
+      variables: { '1': 'María Suárez', '2': 'Juan Pérez', '4': '14:30', '5': 'https://avisar.app/t/token-appointment-1' },
+    });
+    expect(provider.sent[1]).toMatchObject({
+      to: '+5491155556666', reference: 'notification-2', buttonParameter: 'token-appointment-2',
+      variables: { '1': 'Ana López', '2': 'Laura Ruiz', '4': '19:30', '5': 'https://avisar.app/t/token-appointment-2' },
+    });
+    expect(provider.sent[0]?.body).toContain('Centro Belgrano');
+    expect(provider.sent[1]?.body).toContain('Consultorio Norte');
+    expect(markSent).toHaveBeenNthCalledWith(1, 'notification-1', expect.any(String), provider.sent[0]?.body);
+    expect(markSent).toHaveBeenNthCalledWith(2, 'notification-2', expect.any(String), provider.sent[1]?.body);
   });
 
   it('never sends for an appointment that was cancelled after scheduling', async () => {

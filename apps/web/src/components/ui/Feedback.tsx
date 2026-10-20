@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
-import type { AppointmentStatus, InvoiceStatus, NotificationStatus } from '@avisar/shared';
+import type {
+  AppointmentStatus,
+  DeliveryStatus,
+  InvoiceStatus,
+  NotificationStatus,
+} from '@avisar/shared';
+import { formatTime } from '../../lib/format';
 
 // --- status pills ----------------------------------------------------------
 
@@ -32,6 +38,43 @@ export function NotificationBadge({ status }: { status: NotificationStatus }) {
   return (
     <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}>
       {label}
+    </span>
+  );
+}
+
+const DELIVERY_LABELS: Record<DeliveryStatus, { label: string; className: string }> = {
+  DELIVERED: { label: 'Entregado', className: 'bg-brand-100 text-brand-700' },
+  READ: { label: 'Leído', className: 'bg-brand-100 text-brand-700' },
+  UNDELIVERED: { label: 'No llegó', className: 'bg-danger-50 text-danger-600' },
+  // "Enviado" on its own reads as success. It is not one: it only means the
+  // provider took the request, and saying so plainly is the honest version.
+  UNKNOWN: { label: 'Enviado, sin confirmar', className: 'bg-info-50 text-info-600' },
+};
+
+/**
+ * What the provider reported back about a message we already handed over.
+ *
+ * Takes over from the send badge once a row is SENT, because delivery is the
+ * stricter and more useful claim. A reminder that never reached the phone is
+ * not a sent reminder.
+ */
+export function DeliveryBadge({
+  deliveryStatus,
+  deliveredAt,
+}: {
+  deliveryStatus: DeliveryStatus;
+  deliveredAt: string | null;
+}) {
+  const { label, className } = DELIVERY_LABELS[deliveryStatus];
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${className}`}
+    >
+      {label}
+      {deliveredAt && deliveryStatus !== 'UNDELIVERED' && (
+        <span className="font-normal opacity-70">{formatTime(deliveredAt)}</span>
+      )}
     </span>
   );
 }

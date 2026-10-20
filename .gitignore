@@ -8,3 +8,4 @@ build/
 coverage/
 .vite/
 apps/api/prisma/generated/
+cuenta.md

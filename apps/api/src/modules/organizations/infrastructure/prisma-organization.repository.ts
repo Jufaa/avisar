@@ -1,5 +1,6 @@
 import type { Organization, PrismaClient } from '@prisma/client';
 import type { OrganizationDto, UserDto } from '@avisar/shared';
+import { env } from '../../../config/env.js';
 import type { OrganizationRepository, OrganizationUpdate } from '../domain/organization.repository.js';
 
 export function toOrganizationDto(organization: Organization): OrganizationDto {
@@ -29,6 +30,10 @@ export class PrismaOrganizationRepository implements OrganizationRepository {
       email: user.email,
       fullName: user.fullName,
       organization: toOrganizationDto(user.organization),
+      // Composed here rather than at each caller so the menu cannot disagree
+      // with the routes: both consumers want the same view of what this
+      // deployment has switched on.
+      features: { invoicing: env.INVOICING_ENABLED },
     };
   }
 

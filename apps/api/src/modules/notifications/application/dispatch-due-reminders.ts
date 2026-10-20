@@ -1,6 +1,6 @@
 import { renderTemplate, templateVariables } from '../domain/render-template.js';
 import type { ConfirmationLinkFactory } from '../domain/confirmation-link.js';
-import type { NotificationProvider } from '../domain/notification-provider.js';
+import type { NotificationProvider, OrganizationNotificationProviderResolver } from '../domain/notification-provider.js';
 import type { DueReminder, NotificationRepository } from '../domain/notification.repository.js';
 
 export interface DispatchOptions {
@@ -11,7 +11,7 @@ export interface DispatchOptions {
 
 export interface DispatchDeps {
   repository: NotificationRepository;
-  provider: NotificationProvider;
+  provider: NotificationProvider | OrganizationNotificationProviderResolver;
   links: ConfirmationLinkFactory;
 }
 
@@ -68,7 +68,10 @@ export async function dispatchDueReminders(
 
       const body = renderTemplate(reminder.templateBody, context);
 
-      const result = await deps.provider.send({
+      const provider = typeof deps.provider === 'function'
+        ? await deps.provider(reminder.organizationId)
+        : deps.provider;
+      const result = await provider.send({
         to: reminder.toPhone,
         body,
         variables: templateVariables(context),

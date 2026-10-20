@@ -51,3 +51,5 @@ export interface NotificationProvider {
   readonly live: boolean;
   send(message: OutboundMessage): Promise<SendResult>;
 }
+
+export type OrganizationNotificationProviderResolver = (organizationId: string) => Promise<NotificationProvider>;

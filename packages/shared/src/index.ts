@@ -9,6 +9,15 @@ export type AppointmentStatus = (typeof APPOINTMENT_STATUS)[number];
 export const NOTIFICATION_STATUS = ['PENDING', 'SENDING', 'SENT', 'FAILED', 'CANCELLED'] as const;
 export type NotificationStatus = (typeof NOTIFICATION_STATUS)[number];
 
+/**
+ * Delivery is tracked separately from send status on purpose.
+ *
+ * A constant rather than an enum because this package stays free of runtime
+ * dependencies, and because the web needs to render each of these as a label.
+ */
+export const DELIVERY_STATUS = ['UNKNOWN', 'DELIVERED', 'READ', 'UNDELIVERED'] as const;
+export type DeliveryStatus = (typeof DELIVERY_STATUS)[number];
+
 export const TEMPLATE_KIND = ['REMINDER', 'CONFIRMATION'] as const;
 export type TemplateKind = (typeof TEMPLATE_KIND)[number];
 
@@ -50,6 +59,16 @@ export interface UserDto {
   email: string;
   fullName: string;
   organization: OrganizationDto;
+  /**
+   * What this deployment actually offers.
+   *
+   * The client is a static bundle and cannot read the server's environment, so
+   * the only way to keep a menu entry from pointing at a route that was never
+   * mounted is to tell it what is switched on.
+   */
+  features: {
+    invoicing: boolean;
+  };
 }
 
 export interface ProfessionalDto {
@@ -120,6 +139,16 @@ export interface NotificationLogDto {
   patientName: string;
   professionalName: string;
   appointmentStartsAt: string;
+  /**
+   * What the provider reported back, which `status` cannot express.
+   *
+   * SENT means Meta accepted the request. This field is the answer to the
+   * question a clinic actually asks — did it reach the phone — and it stays
+   * UNKNOWN until a webhook fills it in.
+   */
+  deliveryStatus: DeliveryStatus;
+  deliveredAt: string | null;
+  deliveryError: string | null;
 }
 
 /** Payload returned by the public token endpoint the patient lands on. */

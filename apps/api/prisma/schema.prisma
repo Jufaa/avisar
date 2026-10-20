@@ -56,6 +56,25 @@ enum NotificationStatus {
   CANCELLED
 }
 
+/// What Meta reported back about a message we already handed over.
+///
+/// This is a different axis from NotificationStatus on purpose. SENT means
+/// "the provider accepted the request", which is all we know at send time.
+/// Delivery is the answer to a question we cannot ask synchronously: did the
+/// phone actually ring? Folding the two together would mean a message that
+/// never arrived looked identical to one that did, and a delivery failure
+/// would be miscounted as a send failure and burn a retry.
+enum DeliveryStatus {
+  /// Meta has not reported anything. A SENT row sits here until it does.
+  UNKNOWN
+  DELIVERED
+  READ
+  /// Meta took the request but the message never reached the phone: wrong
+  /// number, blocked, no signal. Sending again may or may not help, so this
+  /// records the reason instead of guessing.
+  UNDELIVERED
+}
+
 enum TemplateKind {
   REMINDER
   CONFIRMATION
@@ -144,9 +163,30 @@ model Organization {
   notifications Notification[]
 
   billingProfile BillingProfile?
+  invoicingConnection InvoicingConnection?
+  whatsappConnection WhatsAppConnection?
   invoices       Invoice[]
 
   @@map("organization")
+}
+
+/// Credentials and one-time signup state are always scoped to one tenant.
+model WhatsAppConnection {
+  organizationId       String   @id @map("organization_id")
+  status               String   @default("DISCONNECTED")
+  encryptedAccessToken String?  @map("encrypted_access_token")
+  wabaId               String?  @map("waba_id")
+  phoneNumberId        String?  @map("phone_number_id")
+  displayPhoneNumber   String?  @map("display_phone_number")
+  signupStateHash      String?  @unique @map("signup_state_hash")
+  signupExpiresAt      DateTime? @map("signup_expires_at") @db.Timestamptz(3)
+  signupConsumed       Boolean  @default(false) @map("signup_consumed")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_connection")
 }
 
 // ---------------------------------------------------------------------------
@@ -336,12 +376,23 @@ model Notification {
 
   toPhone           String  @map("to_phone")
   renderedBody      String? @map("rendered_body")
-  providerMessageId String? @map("provider_message_id")
+  /// Unique because it names exactly one message. The webhook resolves a
+  /// delivery through it, and a duplicate would make that lookup ambiguous —
+  /// so the database refuses to create the ambiguity rather than trusting us
+  /// not to. A retry replaces it with the new id, releasing the old one.
+  providerMessageId String? @unique @map("provider_message_id")
   error             String?
 
-  sentAt    DateTime? @map("sent_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  sentAt DateTime? @map("sent_at")
+
+  /// Filled in by the provider webhook, never by the send path.
+  deliveryStatus DeliveryStatus @default(UNKNOWN) @map("delivery_status")
+  deliveredAt    DateTime?      @map("delivered_at") @db.Timestamptz(3)
+  /// Why it never arrived, verbatim from the provider, when it did not.
+  deliveryError String?        @map("delivery_error")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   appointment  Appointment  @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
@@ -411,6 +462,23 @@ model BillingProfile {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@map("billing_profile")
+}
+
+/// A customer's ARCA {API} connection. The API key is authenticated and encrypted
+/// by the application before it is stored; it is never returned to clients.
+model InvoicingConnection {
+  id             String @id @default(uuid())
+  organizationId String @unique @map("organization_id")
+
+  encryptedApiKey String @map("encrypted_api_key")
+  environment     String @default("homologacion")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("invoicing_connection")
 }
 
 model Invoice {

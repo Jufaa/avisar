@@ -7,7 +7,7 @@ const NAV = [
   { to: '/agenda', label: 'Agenda', icon: '🗓️' },
   { to: '/pacientes', label: 'Pacientes', icon: '👤' },
   { to: '/profesionales', label: 'Profesionales', icon: '🩺', clinicOnly: true },
-  { to: '/recordatorios', label: 'Recordatorios', icon: '💬' },
+  { to: '/cuenta', label: 'Cuenta', icon: '⚙️' },
   { to: '/facturas', label: 'Facturas', icon: '🧾' },
 ];
 
@@ -24,7 +24,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isSolo = useIsSolo();
 
-  const nav = NAV.filter((item) => !(item.clinicOnly && isSolo));
+  const nav = NAV.filter((item) => {
+    if (item.clinicOnly && isSolo) return false;
+    return true;
+  });
 
   return (
     <div className="min-h-dvh sm:flex">

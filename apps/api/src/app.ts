@@ -1,4 +1,5 @@
 import { dirname, resolve } from 'node:path';
+import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import Fastify, { type FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
@@ -17,6 +18,7 @@ import { appointmentRoutes } from './modules/appointments/http/appointment.route
 import { notificationRoutes } from './modules/notifications/http/notification.routes.js';
 import { invoiceRoutes } from './modules/invoicing/http/invoice.routes.js';
 import { publicRoutes } from './modules/public/http/public.routes.js';
+import { metaWebhookRoutes } from './modules/notifications/http/meta-webhook.routes.js';
 
 /** Where this file sits once compiled, so the web build can be found next to it. */
 const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +48,14 @@ export async function buildApp(): Promise<FastifyInstance> {
   // so the content policy is locked all the way down rather than tuned.
   await app.register(helmet, {
     contentSecurityPolicy: {
-      directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        // The production client loads Meta's SDK and opens its signup dialog.
+        scriptSrc: ["'self'", 'https://connect.facebook.net'],
+        connectSrc: ["'self'", 'https://www.facebook.com', 'https://graph.facebook.com'],
+        frameSrc: ['https://www.facebook.com', 'https://web.facebook.com'],
+      },
     },
     crossOriginResourcePolicy: { policy: 'same-site' },
   });
@@ -75,6 +84,34 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await app.register(jwt, { secret: env.JWT_SECRET });
 
+  /**
+   * Keeps the exact bytes of a webhook body available to the handler.
+   *
+   * A signature is computed over what actually crossed the wire. Once Fastify
+   * parses JSON, whitespace and unicode escapes are gone and the original is
+   * unrecoverable — so the stream is teed here and the same buffer is handed
+   * onward for normal parsing. Scoped to the one path that needs it, because
+   * buffering every body in memory is a cost nothing else should pay.
+   */
+  const RAW_BODY_PATH = '/api/webhooks/meta';
+  app.addHook('preParsing', async (request, _reply, payload) => {
+    if (request.method !== 'POST' || request.url !== RAW_BODY_PATH) return payload;
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of payload) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string));
+    }
+    const raw = Buffer.concat(chunks);
+    request.rawBody = raw;
+
+    // Reading the original stream to the end is what makes the bytes
+    // available, but it leaves nothing for the JSON parser that runs next.
+    // Handing back a fresh stream carrying the same bytes is what keeps
+    // `request.body` working — Fastify reads the parser input from here, not
+    // from the stream we just drained.
+    return Readable.from([raw]);
+  });
+
   // Registered before the error handler, which needs `sendFile` to exist to
   // hand an unknown path back to the browser router.
   if (env.SERVE_WEB) {
@@ -98,8 +135,16 @@ export async function buildApp(): Promise<FastifyInstance> {
   await app.register(patientRoutes, { prefix: '/api' });
   await app.register(appointmentRoutes, { prefix: '/api' });
   await app.register(notificationRoutes, { prefix: '/api' });
-  await app.register(invoiceRoutes, { prefix: '/api' });
+  // The fake provider mints CAE numbers that do not exist. Not mounting the
+  // routes removes the surface entirely, where a warning would only advise
+  // against it while leaving it one request away.
+  if (env.INVOICING_ENABLED) {
+    await app.register(invoiceRoutes, { prefix: '/api' });
+  }
   await app.register(publicRoutes, { prefix: '/api' });
+  // Registered as its own module so the session guard the others install stays
+  // in their scope. Meta has no session to send; the signature is the guard.
+  await app.register(metaWebhookRoutes, { prefix: '/api' });
 
   return app;
 }
