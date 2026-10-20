@@ -14,10 +14,10 @@ Verification: `npm run build`, start the application against Neon, and exercise 
 
 ## Tasks
 
-- T1 [S1-S3]: inline; completed; CLI 8.8.0 installed, workspace dependency issue resolved, init and deploy succeeded after browser authentication; commit pending.
-- T2 [S4]: inline after delegated read-only mapping exceeded the bounded evidence budget; completed; Prisma TCP preserved, shared env loader and direct migration config implemented, seed behavior retained, Docker exclusions and README updated; commit pending.
-- T3 [S5-S6]: independent verification for named high-risk items 1, 2, 5; completed; build, full suite, real Neon persistence, and independent scratch audit passed; commit pending.
-- T4 [S7]: inline; completed; fetched the exact skill URL; verified installed user-level skills and enabled Codex Neon plugin with OAuth MCP manifest; no duplicate MCP installation; commit pending.
+- T1 [S1-S3]: inline; completed; CLI 8.8.0 installed, workspace dependency issue resolved, init and deploy succeeded after browser authentication; commit b601960.
+- T2 [S4]: inline after delegated read-only mapping exceeded the bounded evidence budget; completed; Prisma TCP preserved, shared env loader and direct migration config implemented, seed behavior retained, Docker exclusions and README updated; commit b601960.
+- T3 [S5-S6]: independent verification for named high-risk items 1, 2, 5; completed; build, full suite, real Neon persistence, and independent scratch audit passed; commit b601960.
+- T4 [S7]: inline; completed; fetched the exact skill URL; verified installed user-level skills and enabled Codex Neon plugin with OAuth MCP manifest; no duplicate MCP installation; commit b601960.
 
 ## Log
 
@@ -46,3 +46,5 @@ Verification: `npm run build`, start the application against Neon, and exercise 
 - L14: Root .env.local restricted to mode 0600. Verified ignored .env.local/.neon, Docker exclusions, and Zed JSONC Neon OAuth entry. Removed only generated TypeScript build metadata from the authored diff.
 - L15: Receipt-driven review remains on by user preference. Independent verifier launched for actual credential/environment and migration risks; no changes made to review settings.
 - L16: Independent verifier PASS with no reproducible change-caused blockers. Scratch focused suite: 7/7; baseline/candidate local env readback matched stdout, stderr, exit code; root overrides and injected variables passed; Prisma direct URL and seed confirmed. Docker copy/exclusion and lockfile checks passed structurally. Docker image build was not run. Initial differential probe sandbox IPC EPERM resolved on the required escalated retry.
+- L17: Application changes committed in b601960. Optional review consent is pending under lineage review-457ec0ec878171eb; no grant/decline inferred and no review approval claimed. Later explicit deployment request authorizes publishing necessary source to the existing GitHub/Render target under ordinary repository policy.
+- L18: Subsequent Render preparation verified the b601960 Docker image builds and starts successfully with isolated local PostgreSQL, health/web/assets 200 and unauthenticated API 401; see odd/tasks/render-backend-deploy.md. No Render deployment completed yet.
